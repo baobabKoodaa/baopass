@@ -2,6 +2,7 @@ package crypto;
 
 import crypto.Utils;
 
+import javax.crypto.SecretKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
@@ -36,7 +37,8 @@ public class EntropyCollector {
         System.out.println("Buffer size " + buffer.length() + " contents: " + buffer.toString());
 
         /* Create part of the master key from buffer contents. */
-        byte[] out = Utils.PBKDF2(charBuffer, salt, 1000, outputLengthInBytes);
+        SecretKey keyPart = PBKDF2.PBKDF2(charBuffer, salt, 1000, outputLengthInBytes);
+        byte[] out = keyPart.getEncoded();
 
         /* Overwrite buffer values from memory to minimize data lifetime. */
         for (int i=0; i<buffer.length(); i++) {

@@ -1,9 +1,11 @@
 package main;
 
 import crypto.EntropyCollector;
+import crypto.PBKDF2;
 import ui.GUI;
 import crypto.Utils;
 
+import javax.crypto.SecretKey;
 import java.security.NoSuchAlgorithmException;
 
 public class BaoPass {
@@ -34,9 +36,8 @@ public class BaoPass {
             combined[i+mkey.length] = keyword.charAt(i);
         }
         byte[] salt = new byte[16]; // TODO
-        byte[] encoded = Utils.PBKDF2(combined, salt, 1000, 32);
-        char[] readable = Utils.getUrlSafeCharsFromBytes(encoded);
-        return readable;
+        SecretKey siteKey = PBKDF2.PBKDF2(combined, salt, 1000, 32);
+        return Utils.getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 
     /** Combines byte arrays into one, overwrites original arrays. */

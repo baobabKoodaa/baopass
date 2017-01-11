@@ -1,5 +1,7 @@
 package ui;
 
+import crypto.AES;
+import crypto.EncryptedMessage;
 import crypto.EntropyCollector;
 import main.BaoPass;
 
@@ -58,7 +60,18 @@ public class GUI {
             char[] sitekey = baoPass.generateSitePass(mkey, "facebook");
             System.out.println("Master key length " + mkey.length + " contents " + new String(mkey));
             System.out.println("Site key length " + sitekey.length + " contents " + new String(sitekey));
-        } catch (NoSuchAlgorithmException ex) {
+
+            String temp1 = new String(mkey);
+            EncryptedMessage enc = AES.encrypt(new String(mkey).getBytes(), "passu".toCharArray());
+            System.out.println("!!");
+            String temp2 = new String(AES.decrypt(enc, "passu".toCharArray()));
+            System.out.println("********* Match ? " + temp1.equals(temp2));
+            System.out.println("          first " + temp1);
+            System.out.println("          secon " + temp2);
+            System.out.println("          ciphe " + new String(enc.getCipherText()));
+
+
+        } catch (Exception ex) {
             System.out.println("Error " + ex.toString());
         }
         repaint();
