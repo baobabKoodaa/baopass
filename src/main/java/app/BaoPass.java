@@ -30,7 +30,10 @@ public class BaoPass {
 
     public char[] generateSitePass(char[] mkey, char[] keyword) {
         char[] combined = combine(mkey, keyword, false);
-        SecretKey siteKey = PBKDF2.generateKey(combined, 276, 32);
+        int iterations = 276; /* Few iterations is enough, because master key has high entropy. */
+        int passCharsLength = 12; /* Characters in Base64URLSafe. */
+        int keyLengthBytes = (int) (passCharsLength * 0.8);
+        SecretKey siteKey = PBKDF2.generateKey(combined, iterations, keyLengthBytes);
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 

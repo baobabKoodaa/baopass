@@ -1,9 +1,5 @@
 package crypto;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -43,33 +39,6 @@ public class Utils {
         return secureRandom.generateSeed(outputLengthInBytes);
     }
 
-    public static void writeEncryptedMessageToFile(EncryptedMessage msg) {
-        try {
-            FileOutputStream fos = new FileOutputStream("test.txt");
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(msg);
-            oos.close();
-            fos.close();
-        } catch (Exception ex) {
-            System.out.println("Error " + ex.toString());
-        }
-    }
-
-    public static EncryptedMessage readEncryptedMessageFromFile(String filepath) {
-        try {
-            FileInputStream fis = new FileInputStream(filepath);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            EncryptedMessage msg = (EncryptedMessage) ois.readObject();
-            ois.close();
-            fis.close();
-            return msg;
-        } catch (Exception ex) {
-            System.out.println("Error " + ex.toString());
-            return null;
-        }
-
-    }
-
     public static void wipe(byte[] b) {
         for (int i=0; i<b.length; i++) {
             b[i] = b[i] = '0';
@@ -88,41 +57,41 @@ public class Utils {
 
     public static byte[] combine(byte[] a, byte[] b, boolean overwriteOriginals) {
         byte[] out = new byte[a.length + b.length];
-        moveSafely(a, out, 0, overwriteOriginals);
-        moveSafely(b, out, a.length, overwriteOriginals);
+        move(a, out, 0, overwriteOriginals);
+        move(b, out, a.length, overwriteOriginals);
         return out;
     }
 
     public static char[] combine(char[] a, char[] b, boolean overwriteOriginals) {
         char[] out = new char[a.length + b.length];
-        moveSafely(a, out, 0, overwriteOriginals);
-        moveSafely(b, out, a.length, overwriteOriginals);
+        move(a, out, 0, overwriteOriginals);
+        move(b, out, a.length, overwriteOriginals);
         return out;
     }
 
-    public static void moveSafely(byte[] src, byte[] dest, int start, boolean overwriteOriginals) {
+    public static void move(byte[] src, byte[] dest, int start, boolean overwriteOriginal) {
         for (int i=0; i<src.length; i++) {
             dest[start+i] = src[i];
         }
-        if (overwriteOriginals) {
+        if (overwriteOriginal) {
             wipe(src);
         }
     }
 
     /** Moves data from one array to another, wipes original. */
-    public static void moveSafely(char[] src, char[] dest, int start, boolean overwriteOriginals) {
+    public static void move(char[] src, char[] dest, int start, boolean overwriteOriginal) {
         for (int i=0; i<src.length; i++) {
             dest[start+i] = src[i];
         }
-        if (overwriteOriginals) {
+        if (overwriteOriginal) {
             wipe(src);
         }
     }
 
 
-    /** Standard JRE configuration does not allow 256-bit AES with CGM mode
-     *  due to export restrictions on cryptography. This hack disables restrictions.
-     *  It may break with future JRE versions. If that happens, an exception
+    /** This hack disables export restrictions on cryptography, allowing us to
+     *  use 256-bit AES with GCM mode with normal JRE configurations.
+     *  Not guaranteed to work with future JRE versions. If that happens, an exception
      *  will be thrown during cryptographic operations. The exception should be
      *  caught and the user should be directed to install a Cryptographic
      *  Policy Extension pack from Oracle. Source for this hack:

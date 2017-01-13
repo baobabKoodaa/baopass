@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-/** A wrapper for the encrypted master key. */
+/** A wrapper for encrypted master key. */
 public class EncryptedMessage {
 
     private byte[] cipherText;
@@ -35,7 +35,7 @@ public class EncryptedMessage {
 
     /** Constructor for loading an old master key from file. */
     public EncryptedMessage(String sourceFilePath) throws FileNotFoundException {
-        HashMap<String, String> map = readFromFile(sourceFilePath);
+        HashMap<String, String> map = getMapFromFile(sourceFilePath);
         this.cipherText = Utils.getBytesFromUrlSafeChars(map.get("cipherText").toCharArray());
         this.salt = Utils.getBytesFromUrlSafeChars(map.get("salt").toCharArray());
         this.iv = Utils.getBytesFromUrlSafeChars(map.get("iv").toCharArray());
@@ -43,7 +43,7 @@ public class EncryptedMessage {
         this.keyLengthPBKDF2 = Integer.parseInt(map.get("AESkeyLen")) / 8;
     }
 
-    private HashMap<String, String> readFromFile(String sourceFilePath) throws FileNotFoundException {
+    private HashMap<String, String> getMapFromFile(String sourceFilePath) throws FileNotFoundException {
         Scanner scanner = new Scanner(new File(sourceFilePath), "UTF-8");
         HashMap<String, String> map = new HashMap<>();
         scanner.nextLine(); // first line is general info.
@@ -57,13 +57,14 @@ public class EncryptedMessage {
         return map;
     }
 
+    /** Save this encrypted master key to file. */
     public void saveToFile(String filepath) throws IOException {
         if (new File(filepath).exists()) {
             //throw new FileAlreadyExistsException("File already exists! " + file.toString());
         }
         List<String> output = new ArrayList<>();
         output.add("Master key encrypted with AES/GCM/NoPadding, saved in Base64URLSafe encoding.");
-        output.add("bitsOfEntropy:" + cipherText.length * 6); /* Just for convenience. */
+        output.add("bitsOfEntropy:384"); /* Just for convenience. */
         output.add("cipherText:" + new String(Utils.getUrlSafeCharsFromBytes(cipherText)));
         output.add("salt:" + new String(Utils.getUrlSafeCharsFromBytes(salt)));
         output.add("iv:" + new String(Utils.getUrlSafeCharsFromBytes(iv)));

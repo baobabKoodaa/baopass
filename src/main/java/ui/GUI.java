@@ -57,11 +57,15 @@ public class GUI {
         try {
             char[] mkey = baoPass.generateMasterKey();
             System.out.println("Master key length " + mkey.length + " contents " + new String(mkey));
-            char[] sitekey = baoPass.generateSitePass(mkey, "facebook".toCharArray());
-            System.out.println("Site key length " + sitekey.length + " contents " + new String(sitekey));
+            for (int i=1; i<=100; i++) {
+                char[] sitekey = baoPass.generateSitePass(mkey, ("facebook" + i).toCharArray());
+                System.out.println("Site key length " + sitekey.length + " contents " + new String(sitekey));
+            }
+
 
             String temp1 = new String(mkey);
             EncryptedMessage enc = AES.encrypt(new String(mkey).getBytes(), "passu".toCharArray());
+            System.out.println("cipher length " + enc.getCipherText().length + " had input length " + new String(mkey).getBytes().length);
             enc.saveToFile("test.txt");
             enc = new EncryptedMessage("test.txt");
             String temp2 = new String(AES.decrypt(enc, "passu".toCharArray()));

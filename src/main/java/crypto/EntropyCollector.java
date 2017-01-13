@@ -16,32 +16,33 @@ public class EntropyCollector {
 
     public void collect(Object o) {
         if (buffer.length() < 1000000) {
-            buffer.append(""+o);
+            buffer.append(o);
         }
     }
 
     /** Returns a hash of buffer contents, clears buffer. */
     public byte[] consume(int outputLengthInBytes) {
+        /* If buffer is low on entropy, ask user to move the mouse. */
         if (buffer.length() < 1000) {
-            throw new RuntimeException("Out of entropy!");
+            throw new RuntimeException("Low on entropy!");
         }
+
+        /* Turn buffer into char array without creating Strings. */
         char[] charBuffer = new char[buffer.length()];
         for (int i=0; i<buffer.length(); i++) {
             charBuffer[i] = buffer.charAt(i);
         }
 
-        /* Create part of the master key from buffer contents. */
-        SecretKey keyPart = PBKDF2.generateKey(charBuffer, 100000, outputLengthInBytes);
-        byte[] out = keyPart.getEncoded();
+        /* Hash buffer contents. */
+        int iterations = 100000;
+        byte[] out = PBKDF2.generateKey(charBuffer, iterations, outputLengthInBytes).getEncoded();
 
-        /* Overwrite buffer values from memory to minimize data lifetime. */
+        /* Minimize data lifetime. */
         for (int i=0; i<buffer.length(); i++) {
             buffer.replace(i, i+1, "0");
             charBuffer[i] = '0';
         }
         buffer = new StringBuilder();
-
-        System.out.println("Returning size " + out.length + " contents: " + Arrays.toString(out));
         return out;
     }
 }
