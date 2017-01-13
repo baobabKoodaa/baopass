@@ -4,8 +4,6 @@ import crypto.EntropyCollector;
 
 import java.awt.event.*;
 
-import static com.sun.java.accessibility.util.AWTEventMonitor.addKeyListener;
-
 public class Listener implements ActionListener, MouseListener, MouseMotionListener, KeyListener {
 
     EntropyCollector entropyCollector;
@@ -23,12 +21,12 @@ public class Listener implements ActionListener, MouseListener, MouseMotionListe
 
     @Override
     public void keyPressed(KeyEvent e) {
-        entropyCollector.feed(System.nanoTime());
+        entropyCollector.collect(System.nanoTime());
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        entropyCollector.feed(System.nanoTime());
+        entropyCollector.collect(System.nanoTime());
     }
 
     @Override
@@ -40,22 +38,22 @@ public class Listener implements ActionListener, MouseListener, MouseMotionListe
     public void mouseClicked(MouseEvent e) {
         Point point = getPoint(e);
         gui.userClickedOn(point);
-        entropyCollector.feed(point);
-        entropyCollector.feed(System.nanoTime());
+        entropyCollector.collect(point);
+        entropyCollector.collect(System.nanoTime());
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
         Point point = getPoint(e);
-        entropyCollector.feed(point);
-        entropyCollector.feed(System.nanoTime());
+        entropyCollector.collect(point);
+        entropyCollector.collect(System.nanoTime());
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
         Point point = getPoint(e);
-        entropyCollector.feed(point);
-        entropyCollector.feed(System.nanoTime());
+        entropyCollector.collect(point);
+        entropyCollector.collect(System.nanoTime());
     }
 
     @Override
@@ -69,8 +67,8 @@ public class Listener implements ActionListener, MouseListener, MouseMotionListe
     @Override
     public void mouseMoved(MouseEvent e) {
         Point point = getPoint(e);
-        entropyCollector.feed(point);
-        entropyCollector.feed(System.nanoTime());
+        entropyCollector.collect(point);
+        entropyCollector.collect(System.nanoTime());
     }
 
     public Point getPoint(MouseEvent e) {

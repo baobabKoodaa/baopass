@@ -3,11 +3,10 @@ package ui;
 import crypto.AES;
 import crypto.EncryptedMessage;
 import crypto.EntropyCollector;
-import main.BaoPass;
+import app.BaoPass;
 
 import javax.swing.*;
 import java.awt.*;
-import java.security.NoSuchAlgorithmException;
 
 public class GUI {
     private JFrame frame;
@@ -57,13 +56,14 @@ public class GUI {
     public void userClickedOn(Point point) {
         try {
             char[] mkey = baoPass.generateMasterKey();
-            char[] sitekey = baoPass.generateSitePass(mkey, "facebook");
             System.out.println("Master key length " + mkey.length + " contents " + new String(mkey));
+            char[] sitekey = baoPass.generateSitePass(mkey, "facebook".toCharArray());
             System.out.println("Site key length " + sitekey.length + " contents " + new String(sitekey));
 
             String temp1 = new String(mkey);
             EncryptedMessage enc = AES.encrypt(new String(mkey).getBytes(), "passu".toCharArray());
-            System.out.println("!!");
+            enc.saveToFile("test.txt");
+            enc = new EncryptedMessage("test.txt");
             String temp2 = new String(AES.decrypt(enc, "passu".toCharArray()));
             System.out.println("********* Match ? " + temp1.equals(temp2));
             System.out.println("          first " + temp1);

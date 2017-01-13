@@ -1,9 +1,6 @@
 package crypto;
 
-import crypto.Utils;
-
 import javax.crypto.SecretKey;
-import java.security.SecureRandom;
 import java.util.Arrays;
 
 /** Purpose of this class is to collect additional entropy from user actions
@@ -11,18 +8,19 @@ import java.util.Arrays;
  * used to construct a part of the master key. It is essentially insurance
  * in case the main entropy source is corrupted. */
 public class EntropyCollector {
-    StringBuilder buffer;
+    private StringBuilder buffer;
 
     public EntropyCollector() {
         buffer = new StringBuilder();
     }
 
-    public void feed(Object o) {
-        /* TODO: fix overfill buffer */
-        buffer.append(""+o);
+    public void collect(Object o) {
+        if (buffer.length() < 1000000) {
+            buffer.append(""+o);
+        }
     }
 
-    /** Derives partial key from buffer contents, clears buffer. */
+    /** Returns a hash of buffer contents, clears buffer. */
     public byte[] consume(int outputLengthInBytes) {
         if (buffer.length() < 1000) {
             throw new RuntimeException("Out of entropy!");
@@ -31,13 +29,9 @@ public class EntropyCollector {
         for (int i=0; i<buffer.length(); i++) {
             charBuffer[i] = buffer.charAt(i);
         }
-        /* Salt is required by PBKDF2, but it's not important for this use case. */
-        byte[] salt = (System.nanoTime()+"").getBytes();
-
-        System.out.println("Buffer size " + buffer.length() + " contents: " + buffer.toString());
 
         /* Create part of the master key from buffer contents. */
-        SecretKey keyPart = PBKDF2.PBKDF2(charBuffer, salt, 1000, outputLengthInBytes);
+        SecretKey keyPart = PBKDF2.generateKey(charBuffer, 100000, outputLengthInBytes);
         byte[] out = keyPart.getEncoded();
 
         /* Overwrite buffer values from memory to minimize data lifetime. */
