@@ -4,10 +4,9 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-
-import static crypto.Utils.getUrlSafeCharsFromBytes;
 
 public class PBKDF2 {
 
@@ -16,9 +15,9 @@ public class PBKDF2 {
         return new SecretKeySpec(secretKey.getEncoded(), "AES");
     }
 
-    public static SecretKey generateKey(final char[] secret, int iterations, int keyLengthBytes) {
+    public static SecretKey generateKey(final char[] secret, int iterations, int keyLengthBytes) throws UnsupportedEncodingException {
         /* Salt is irrelevant for site pass generation and entropy hashing, but required by the library. */
-        byte[] salt = "BaoPass".getBytes();
+        byte[] salt = "BaoPass!".getBytes("UTF-8");
         return generateKey(secret, salt, iterations, keyLengthBytes);
     }
 

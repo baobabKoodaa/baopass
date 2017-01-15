@@ -2,14 +2,19 @@ package ui;
 
 import crypto.EntropyCollector;
 
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.event.*;
 
-public class Listener implements ActionListener, MouseListener, MouseMotionListener, KeyListener {
+import static ui.GUI.getPoint;
+
+public class EntropyListener implements ActionListener, MouseListener, MouseMotionListener, KeyListener, DocumentListener {
 
     EntropyCollector entropyCollector;
-    private GUI gui;
+    GUI gui;
 
-    public Listener(GUI gui, EntropyCollector entropyCollector) {
+    public EntropyListener(GUI gui, EntropyCollector entropyCollector) {
         this.gui = gui;
         this.entropyCollector = entropyCollector;
     }
@@ -71,9 +76,6 @@ public class Listener implements ActionListener, MouseListener, MouseMotionListe
         entropyCollector.collect(System.nanoTime());
     }
 
-    public Point getPoint(MouseEvent e) {
-        return new Point(e.getY(), e.getX());
-    }
 
 
     @Override
@@ -82,4 +84,28 @@ public class Listener implements ActionListener, MouseListener, MouseMotionListe
     }
 
 
+    @Override
+    public void insertUpdate(DocumentEvent e) {
+        System.out.println("updated");
+        try {
+            gui.generateSitePass();
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    @Override
+    public void removeUpdate(DocumentEvent e) {
+        System.out.println("removed");
+        try {
+            gui.generateSitePass();
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    @Override
+    public void changedUpdate(DocumentEvent e) {
+        System.out.println("changed");
+    }
 }

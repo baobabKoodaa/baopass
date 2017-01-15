@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-/** A wrapper for encrypted master key. */
+/** A wrapper for encrypted master key with methods to save/load from file. */
 public class EncryptedMessage {
 
     private byte[] cipherText;
