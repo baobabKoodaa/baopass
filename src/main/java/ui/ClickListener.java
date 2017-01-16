@@ -3,20 +3,20 @@ package ui;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-import static ui.GUI.getPoint;
-
-public class LockIconClickListener implements MouseListener {
+/** Separate instance of ClickListener for each clickable object. */
+public class ClickListener implements MouseListener {
 
     GUI gui;
+    int id;
 
-    public LockIconClickListener(GUI gui) {
+    public ClickListener(GUI gui, int id) {
         this.gui = gui;
+        this.id = id;
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        System.out.println("WOOT");
-        gui.lockClicked();
+        gui.userClicked(id);
     }
 
     @Override

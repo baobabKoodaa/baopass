@@ -18,11 +18,11 @@ public class UtilsTest {
             byte[] orig = new byte[i];
             rng.nextBytes(orig);
 
-            /* Convert to Base64Urlsafe encoding. */
+            /* Convert to Base64Urlsafe encoding. Conversion ok? */
             char[] chars = Utils.getUrlSafeCharsFromBytes(orig);
             assertTrue(urlSafe(chars));
 
-            /* Convert back to bytes, do we get the same array back? */
+            /* Convert back to bytes. Do we get the same array back? */
             byte[] back = Utils.getBytesFromUrlSafeChars(chars);
             for (int j=0; j<i; j++) {
                 assertTrue(orig[j] == back[j]);

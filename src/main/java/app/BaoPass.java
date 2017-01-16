@@ -7,8 +7,6 @@ import crypto.PBKDF2;
 import ui.GUI;
 
 import javax.crypto.SecretKey;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 
 import static crypto.Utils.*;
 
@@ -16,16 +14,16 @@ public class BaoPass {
 
     EntropyCollector entropyCollector;
 
-    private char[] masterKey;
+    private EncryptedMessage masterKeyEncrypted;
+    private char[] masterKeyPlainText;
 
     public BaoPass() {
         this.entropyCollector = new EntropyCollector();
     }
 
     public void run() throws Exception {
-        GUI gui = new GUI(this, entropyCollector);
-        EncryptedMessage enc = new EncryptedMessage("test.txt");
-        masterKey = new String(AES.decrypt(enc, "passu".toCharArray())).toCharArray();
+        String initialView = (loadEncryptedMasterKey() ? GUI.MAIN_VIEW_ID : GUI.FIRST_LAUNCH_VIEW_ID);
+        GUI gui = new GUI(this, entropyCollector, initialView);
     }
 
     public char[] generateMasterKey() throws Exception {
@@ -44,12 +42,35 @@ public class BaoPass {
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 
-    public void setMasterKey(char[] k) {
-        this.masterKey = k;
+    private boolean loadEncryptedMasterKey() {
+        try {
+            masterKeyEncrypted = new EncryptedMessage("test2.txt");
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
-    public char[] getMasterKey() {
-        return this.masterKey;
+    public boolean decryptMasterKey() {
+        try {
+            masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, "passu".toCharArray())).toCharArray();
+            return true;
+        } catch (Exception ex) {
+            System.err.println("Error decrypting master key! " + ex.toString());
+            return false;
+        }
+    }
+
+    public void forgetMasterKeyPlainText() {
+        wipe(masterKeyPlainText);
+    }
+
+    public void setMasterKeyPlainText(char[] k) {
+        this.masterKeyPlainText = k;
+    }
+
+    public char[] getMasterKeyPlainText() {
+        return this.masterKeyPlainText;
     }
 
 }
