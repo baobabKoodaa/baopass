@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class GUI {
 
@@ -48,9 +49,9 @@ public class GUI {
         this.entropyCollector = entropyCollector;
         this.inputEntropyListener = new EntropyListener(entropyCollector);
 
-        dimension = new Dimension(260, 400);
+        dimension = new Dimension(260, 170);
         regularFont = new Font("Tahoma", Font.PLAIN, 12);
-        frame = new JFrame();
+        frame = new JFrame("BaoPass");
         loadAppIcon();
         viewHolder = new JPanel();
         cardLayout = new CardLayout();
@@ -277,9 +278,12 @@ public class GUI {
     /** Try to load icon for the app, use default icon if something goes wrong. */
     private void loadAppIcon() {
         try {
-            InputStream res = Main.class.getClassLoader().getResourceAsStream("icon2.png");
-            Image img = ImageIO.read(res);
-            frame.setIconImage(img);
+            //Image large = ImageIO.read(Main.class.getClassLoader().getResourceAsStream("icon2.png"));
+            Image small = ImageIO.read(Main.class.getClassLoader().getResourceAsStream("B-25.png"));
+            java.util.List<Image> list = new ArrayList<>();
+            //list.add(large);
+            list.add(small);
+            frame.setIconImages(list);
         } catch (Exception e) {
             /* Use default icon. */
         }
