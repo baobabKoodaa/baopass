@@ -10,7 +10,7 @@ import java.security.spec.InvalidKeySpecException;
 
 public class PBKDF2 {
 
-    public static SecretKeySpec generateAESkey(final char[] password, final byte[] salt, int iterations, int keyLength) throws Exception {
+    public static SecretKeySpec generateAESkey(final char[] password, final byte[] salt, int iterations, int keyLength) {
         SecretKey secretKey = PBKDF2.generateKey(password, salt, iterations, keyLength);
         return new SecretKeySpec(secretKey.getEncoded(), "AES");
     }

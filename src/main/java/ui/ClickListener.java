@@ -1,10 +1,12 @@
 package ui;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 /** Separate instance of ClickListener for each clickable object. */
-public class ClickListener implements MouseListener {
+public class ClickListener implements MouseListener, ActionListener {
 
     GUI gui;
     int id;
@@ -16,6 +18,12 @@ public class ClickListener implements MouseListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
+        gui.userClicked(id);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        /* Checkbox state changed. */
         gui.userClicked(id);
     }
 
@@ -38,4 +46,6 @@ public class ClickListener implements MouseListener {
     public void mouseExited(MouseEvent e) {
 
     }
+
+
 }

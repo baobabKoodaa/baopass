@@ -34,8 +34,8 @@ public class EncryptedMessage {
     }
 
     /** Constructor for loading an old master key from file. */
-    public EncryptedMessage(String sourceFilePath) throws FileNotFoundException {
-        HashMap<String, String> map = getMapFromFile(sourceFilePath);
+    public EncryptedMessage(File sourceFile) throws FileNotFoundException {
+        HashMap<String, String> map = getMapFromFile(sourceFile);
         this.cipherText = Utils.getBytesFromUrlSafeChars(map.get("cipherText").toCharArray());
         this.salt = Utils.getBytesFromUrlSafeChars(map.get("salt").toCharArray());
         this.iv = Utils.getBytesFromUrlSafeChars(map.get("iv").toCharArray());
@@ -43,8 +43,8 @@ public class EncryptedMessage {
         this.keyLengthPBKDF2 = Integer.parseInt(map.get("AESkeyLen")) / 8;
     }
 
-    private HashMap<String, String> getMapFromFile(String sourceFilePath) throws FileNotFoundException {
-        Scanner scanner = new Scanner(new File(sourceFilePath), "UTF-8");
+    private HashMap<String, String> getMapFromFile(File file) throws FileNotFoundException {
+        Scanner scanner = new Scanner(file, "UTF-8");
         HashMap<String, String> map = new HashMap<>();
         scanner.nextLine(); // first line is general info.
         while (scanner.hasNext()){

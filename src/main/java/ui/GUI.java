@@ -8,12 +8,17 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class GUI {
 
     private static final int LOCK_ID = 1;
     private static final int SITE_PASS_ID = 2;
+    private static final int BUTTON_LOAD_MASTER_KEY_ID = 3;
+    private static final int BUTTON_NEW_MASTER_KEY_ID = 4;
+    private static final int CHECKBOX_REMEMBER_KEY_ID = 5;
 
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
     public static final String FIRST_LAUNCH_VIEW_ID = "FIRST_LAUNCH_VIEW_ID";
@@ -24,6 +29,7 @@ public class GUI {
     private JPanel firstLaunchView;
     private CardLayout cardLayout;
     private Dimension dimension;
+    private Font regularFont;
 
     private BaoPass baoPass;
     private EntropyCollector entropyCollector;
@@ -43,7 +49,9 @@ public class GUI {
         this.inputEntropyListener = new EntropyListener(entropyCollector);
 
         dimension = new Dimension(260, 400);
+        regularFont = new Font("Tahoma", Font.PLAIN, 12);
         frame = new JFrame();
+        loadAppIcon();
         viewHolder = new JPanel();
         cardLayout = new CardLayout();
         viewHolder.setLayout(cardLayout);
@@ -67,27 +75,50 @@ public class GUI {
     private void createFirstLaunchView() throws IOException {
         firstLaunchView = new JPanel();
         firstLaunchView.setPreferredSize(dimension);
+        firstLaunchView.setLayout(new GridBagLayout());
         //firstLaunchView.setBackground(new Color(255, 255, 255));
         viewHolder.add(firstLaunchView, FIRST_LAUNCH_VIEW_ID);
 
-        JPanel buttons = new JPanel(new GridLayout(3, 1));
+        JPanel buttons = new JPanel(new GridLayout(4, 1));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        //gbc.anchor = GridBagConstraints.CENTER;
-        //gbc.weighty = 1;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.weighty = 1;
 
-        JLabel welcomeText = new JLabel("       Welcome to BaoPass!");
-        welcomeText.setFont(new Font("Tahoma", Font.PLAIN, 12));
+        JLabel welcomeText = new JLabel("Welcome to BaoPass!");
+        welcomeText.setHorizontalAlignment(JLabel.CENTER);
+        welcomeText.setFont(regularFont);
         buttons.add(welcomeText, gbc);
-        Button buttonCreate = new Button("Create new master key");
+        JButton buttonCreate = createButton("Create new master key");
         buttons.add(buttonCreate, gbc);
-        Button buttonLoad = new Button("Load old master key");
+        buttonCreate.addMouseListener(new ClickListener(this, BUTTON_NEW_MASTER_KEY_ID));
+        JButton buttonLoad = createButton("Load old master key");
+        buttonLoad.addMouseListener(new ClickListener(this, BUTTON_LOAD_MASTER_KEY_ID));
         buttons.add(buttonLoad, gbc);
+        JCheckBox checkBoxRemember = new JCheckBox("Remember this key");
+        checkBoxRemember.setFont(regularFont);
+        checkBoxRemember.setHorizontalAlignment(JLabel.CENTER);
+        if (baoPass.getPreferenceRememberKey()) {
+            checkBoxRemember.doClick();
+        }
+        checkBoxRemember.addActionListener(new ClickListener(this, CHECKBOX_REMEMBER_KEY_ID));
+        buttons.add(checkBoxRemember, BorderLayout.CENTER);
 
+        firstLaunchView.addMouseListener(inputEntropyListener);
+        firstLaunchView.addMouseMotionListener(inputEntropyListener);
+        firstLaunchView.addKeyListener(inputEntropyListener);
+        firstLaunchView.add(buttons);
+    }
 
-
-
-        firstLaunchView.add(buttons, BorderLayout.CENTER);
+    private JButton createButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(new Color(142, 68, 173));
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Tahoma", Font.BOLD, 12));
+        button.addMouseMotionListener(inputEntropyListener);
+        button.addMouseListener(inputEntropyListener);
+        return button;
     }
 
     private void createMainView() throws IOException {
@@ -106,7 +137,7 @@ public class GUI {
         mainView.add(lockIcon);
         lockIcon.addMouseListener(new ClickListener(this, LOCK_ID));
 
-        sitePass = new JLabel("");
+        sitePass = new JLabel("Site password");
         sitePass.setFont(new Font("Monospaced", Font.PLAIN, 20));
         sitePass.addMouseListener(new ClickListener(this, SITE_PASS_ID));
         mainView.add(sitePass);
@@ -133,6 +164,18 @@ public class GUI {
             case SITE_PASS_ID:
                 sitePassClicked();
                 break;
+            case BUTTON_NEW_MASTER_KEY_ID:
+                if (baoPass.createNewMasterKey("passu".toCharArray())) {
+                    changeView(MAIN_VIEW_ID);
+                }
+                break;
+            case BUTTON_LOAD_MASTER_KEY_ID:
+                if (baoPass.loadEncryptedMasterKey(askUserForFile())) {
+                    changeView(MAIN_VIEW_ID);
+                }
+                break;
+            case CHECKBOX_REMEMBER_KEY_ID:
+                baoPass.setPreferenceRememberKey(!baoPass.getPreferenceRememberKey());
             default:
                 break;
         }
@@ -154,17 +197,15 @@ public class GUI {
     }
 
     private void sitePassClicked() {
-        System.out.println("prev:  " + sitePass.getText());
         sitePass.setText("Copied to clipboard");
-        System.out.println("after: " + sitePass.getText());
     }
 
     public void generateSitePass() throws Exception {
         String kw = keywordField.getText();
         if (kw.isEmpty()) {
-            sitePass.setText("");
+            sitePass.setText("Site password");
         } else {
-            char[] pass = baoPass.generateSitePass(baoPass.getMasterKeyPlainText(), kw.toCharArray());
+            char[] pass = baoPass.generateSitePass(kw.toCharArray());
             sitePass.setText(new String(pass));
         }
     }
@@ -215,5 +256,32 @@ public class GUI {
 
     public static Point getPoint(MouseEvent e) {
         return new Point(e.getY(), e.getX());
+    }
+
+    private void changeView(String view) {
+        cardLayout.show(viewHolder, view);
+    }
+
+    private File askUserForFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setCurrentDirectory(new java.io.File("."));
+        chooser.setDialogTitle("Choose encrypted keyfile");
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+        if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            return chooser.getSelectedFile();
+        }
+        return null;
+    }
+
+    /** Try to load icon for the app, use default icon if something goes wrong. */
+    private void loadAppIcon() {
+        try {
+            InputStream res = Main.class.getClassLoader().getResourceAsStream("icon2.png");
+            Image img = ImageIO.read(res);
+            frame.setIconImage(img);
+        } catch (Exception e) {
+            /* Use default icon. */
+        }
     }
 }

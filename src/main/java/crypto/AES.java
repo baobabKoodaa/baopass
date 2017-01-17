@@ -3,6 +3,9 @@ package crypto;
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 public class AES {
@@ -14,15 +17,15 @@ public class AES {
      *  Needs to be high, because user chosen passwords may be of low quality. */
     static final int ITERATIONS = 10000;
 
-    /** GCM mode requires key size to be either 128, 196 or 256 bits.
-     *  Standard JRE configurations only allow 128 bit key size in GCM mode. */
-    static final int KEY_LENGTH_BYTES = 16;
+    /** GCM mode requires key size to be either 128, 196 or 256 bits. */
+    static final int KEY_LENGTH_BYTES = 32;
 
     /** In our use case, GCM Security tag size is related to the probability
      *  that we detect . 128 is the max size. */
     static final int GCM_TAG_SIZE = 128;
 
-    public static EncryptedMessage encrypt(final byte[] dataToEncrypt, final char[] password) throws Exception {
+    public static EncryptedMessage encrypt(final byte[] dataToEncrypt, final char[] password)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         /* Generate random IV and random salt. */
         SecureRandom rng = new SecureRandom();
         byte[] salt = new byte[32]; /* Can be any size. */
