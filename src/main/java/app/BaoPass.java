@@ -21,8 +21,8 @@ public class BaoPass {
 
     private boolean preferenceRememberKey;
 
-    public BaoPass() {
-        this.entropyCollector = new EntropyCollector();
+    public BaoPass(EntropyCollector entropyCollector) {
+        this.entropyCollector = entropyCollector;
     }
 
     public void run() throws Exception {
