@@ -14,11 +14,19 @@ import static crypto.Utils.*;
 
 public class BaoPass {
 
-    EntropyCollector entropyCollector;
+    /* Few iterations for site pass is ok, because master key has high entropy. */
+    private static final int SITE_PASS_ITERATIONS = 276;
 
+    /* This variable determines generated site password length.
+    *  Must be multiple of 3 for Base64 encoding. 9 bytes yields exactly 12 chars in Base64.
+    *  If a non divisible byte amount is needed, this variable should be first rounded up
+    *  to a multiple of 3 and the result should be truncated down AFTER Base64 encoding.
+    *  Otherwise the last characters in the generated pass will have lower entropy. */
+    private static final int SITE_PASS_BYTES = 9;
+
+    private EntropyCollector entropyCollector;
     private EncryptedMessage masterKeyEncrypted;
     private char[] masterKeyPlainText;
-
     private boolean preferenceRememberKey;
 
     public BaoPass(EntropyCollector entropyCollector) {
@@ -37,6 +45,7 @@ public class BaoPass {
         try {
             masterKeyPlainText = generateMasterKey();
             masterKeyEncrypted = AES.encrypt(new String(masterKeyPlainText).getBytes(), passwordForEncryption);
+            forgetMasterKeyPlainText();
             /* TODO: save to file.
             * TODO: if preferenceRememberKey then remember file. */
             return true;
@@ -57,10 +66,7 @@ public class BaoPass {
 
     public char[] generateSitePass(char[] keyword) throws Exception {
         char[] combined = combine(masterKeyPlainText, keyword, false);
-        int iterations = 276; /* Few iterations is enough, because master key has high entropy. */
-        int passCharsLength = 12; /* Characters in Base64URLSafe. */
-        int keyLengthBytes = (int) (passCharsLength * 0.8);
-        SecretKey siteKey = PBKDF2.generateKey(combined, iterations, keyLengthBytes);
+        SecretKey siteKey = PBKDF2.generateKey(combined, SITE_PASS_ITERATIONS, SITE_PASS_BYTES);
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 
@@ -70,25 +76,25 @@ public class BaoPass {
             if (preferenceRememberKey) {
                 /* TODO: remember selected file */
             }
-            decryptMasterKey(); // TODO: dont do this here.
             return true;
         } catch (Exception ex) {
             return false;
         }
     }
 
-    public boolean decryptMasterKey() {
+    public boolean decryptMasterKey(String masterPassword) {
         try {
-            masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, "passu".toCharArray())).toCharArray();
+            masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, masterPassword.toCharArray())).toCharArray();
             return true;
         } catch (Exception ex) {
-            System.err.println("Error decrypting master key! " + ex.toString());
+            /* Don't report error, we try to decrypt on every keystroke. */
             return false;
         }
     }
 
     public void forgetMasterKeyPlainText() {
         wipe(masterKeyPlainText);
+        masterKeyPlainText = null;
     }
 
     public void setMasterKeyPlainText(char[] k) {

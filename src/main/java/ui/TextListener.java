@@ -4,34 +4,28 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 /** When keyword field is updated, this listener is triggered to generate site pass. */
-public class KeywordListener implements DocumentListener {
+public class TextListener implements DocumentListener {
 
     GUI gui;
+    int id;
 
-    public KeywordListener(GUI gui) {
+    public TextListener(GUI gui, int id) {
         this.gui = gui;
-    }
-
-    private void askGuiToGenerateSitePass() {
-        try {
-            gui.generateSitePass();
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
+        this.id = id;
     }
 
     @Override
     public void insertUpdate(DocumentEvent e) {
-        askGuiToGenerateSitePass();
+        gui.textFieldChanged(id);
     }
 
     @Override
     public void removeUpdate(DocumentEvent e) {
-        askGuiToGenerateSitePass();
+        gui.textFieldChanged(id);
     }
 
     @Override
     public void changedUpdate(DocumentEvent e) {
-        askGuiToGenerateSitePass();
+        gui.textFieldChanged(id);
     }
 }

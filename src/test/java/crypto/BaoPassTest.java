@@ -38,7 +38,7 @@ public class BaoPassTest {
 
         /** Incrementing i between calls should provide different outputs to simulate
          *  a functional Entropy Collector. Same i should provide the same output
-         *  every time, to simulate a broken entropy collector. */
+         *  every time to simulate a broken entropy collector. */
         int i = 0;
 
         @Override
@@ -49,17 +49,17 @@ public class BaoPassTest {
     }
 
     /** Generates 100 000 master keys and returns true if they look random.
-     *  Parameter determines if we simulate a functional or broken entropy collector. */
+     *  @param brokenEntropyCollector determines if we simulate a functional or broken entropy collector. */
     private boolean masterKeyLooksRandom(boolean brokenEntropyCollector) throws Exception {
-        EntropyCollectorStub entropyCollectorStub = new EntropyCollectorStub();
-        BaoPass baoPass = new BaoPass(entropyCollectorStub);
+        EntropyCollectorStub simulatedEntropyCollector = new EntropyCollectorStub();
+        BaoPass baoPass = new BaoPass(simulatedEntropyCollector);
         HashSet<String> seenKeys = new HashSet<>();
         int[][] charCountsPos = new int[MASTER_KEY_LEN][500];
         int[] charCounts = new int[500];
         for (int i=0; i<100000; i++) {
             if (!brokenEntropyCollector) {
                 /* If value is not incremented, entropyCollector produces same output every time. */
-                entropyCollectorStub.i++;
+                simulatedEntropyCollector.i++;
             }
             char[] mkey = baoPass.generateMasterKey();
             boolean keyNotSeenBefore = seenKeys.add(new String(mkey));

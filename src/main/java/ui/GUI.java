@@ -10,7 +10,6 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 public class GUI {
@@ -20,9 +19,16 @@ public class GUI {
     private static final int BUTTON_LOAD_MASTER_KEY_ID = 3;
     private static final int BUTTON_NEW_MASTER_KEY_ID = 4;
     private static final int CHECKBOX_REMEMBER_KEY_ID = 5;
+    private static final int TEXT_FIELD_MASTER_PASS_ID = 6;
+    private static final int TEXT_FIELD_KEYWORD_ID = 7;
 
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
     public static final String FIRST_LAUNCH_VIEW_ID = "FIRST_LAUNCH_VIEW_ID";
+
+    public static final String TEXT_WHEN_NO_SITE_PASS = " ";
+    public static final String TOOLTIP_OPEN_LOCK = "Click here to lock down.";
+    public static final String TOOLTIP_CLOSED_LOCK = "Please insert master password to decrypt keyfile.";
+
 
     private JFrame frame;
     private JPanel viewHolder;
@@ -42,14 +48,15 @@ public class GUI {
     private ImageIcon closedLockIcon;
     private ImageIcon openLockIcon;
 
-    private JSearchTextField keywordField;
+    private JTextField keywordField;
+    private JTextField masterPassField;
 
     public GUI(BaoPass baoPass, EntropyCollector entropyCollector, String initialView) throws Exception {
         this.baoPass = baoPass;
         this.entropyCollector = entropyCollector;
         this.inputEntropyListener = new EntropyListener(entropyCollector);
 
-        dimension = new Dimension(260, 170);
+        dimension = new Dimension(300, 170);
         regularFont = new Font("Tahoma", Font.PLAIN, 12);
         frame = new JFrame("BaoPass");
         loadAppIcon();
@@ -65,7 +72,8 @@ public class GUI {
             //System.out.println(fonts[i]);
         }
 
-        cardLayout.show(viewHolder, initialView);
+        changeView(FIRST_LAUNCH_VIEW_ID);
+
         frame.add(viewHolder);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
@@ -123,25 +131,75 @@ public class GUI {
     }
 
     private void createMainView() throws IOException {
-        mainView = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        mainView = new JPanel();
         mainView.setPreferredSize(dimension);
-        keywordField = new JSearchTextField(20);
-        mainView.add(keywordField);
+        mainView.setLayout(new GridBagLayout());
+        viewHolder.add(mainView, MAIN_VIEW_ID);
 
+        JPanel contents = new JPanel(new GridBagLayout());
+        //JPanel contents = new JPanel(new GridLayout(3, 3, 5, 5));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5,3,5,3);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.ipady = 5;
+        gbc.anchor = GridBagConstraints.EAST;
+
+        /* Text labels. */
+        JLabel labelMasterPassword = new JLabel("Master password: ");
+        labelMasterPassword.setFont(regularFont);
+        contents.add(labelMasterPassword, gbc);
+        gbc.gridy++;
+        JLabel labelKeyword = new JLabel("Keyword: ");
+        labelKeyword.setFont(regularFont);
+        contents.add(labelKeyword, gbc);
+        gbc.gridy++;
+        contents.add(new JSeparator(SwingConstants.HORIZONTAL));
+        gbc.gridy++;
+        JLabel labelSitePass = new JLabel("Site password: ");
+        labelSitePass.setVerticalAlignment(JLabel.BOTTOM);
+        labelSitePass.setFont(regularFont);
+        contents.add(labelSitePass, gbc);
+        gbc.gridx++;
+        gbc.gridy = 0;
+        //gbc.weightx = 1;
+        //gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        /* Master pass field. */
+        masterPassField = new JPasswordField(11);
+        masterPassField.setToolTipText("Your master password is needed to decrypt the keyfile.");
+        masterPassField.getDocument().addDocumentListener(new TextListener(this, TEXT_FIELD_MASTER_PASS_ID));
+        contents.add(masterPassField, gbc);
+        gbc.gridx++;
+
+        /* Set up clickable lock icon. */
         String path = "lock-closed-25.png";
         closedLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
         path = "lock-open-25.png";
         openLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
-
         lockIcon = new JLabel(closedLockIcon);
         locked = true;
-        mainView.add(lockIcon);
         lockIcon.addMouseListener(new ClickListener(this, LOCK_ID));
+        lockIcon.setVerticalAlignment(JLabel.TOP);
+        contents.add(lockIcon, gbc);
+        gbc.gridy++;
+        gbc.gridx--;
 
-        sitePass = new JLabel("Site password");
-        sitePass.setFont(new Font("Monospaced", Font.PLAIN, 20));
+        /* Keyword field. */
+        keywordField = new JTextField(11);
+        keywordField.setToolTipText("Keywords do not have to be secret, for example 'bank' is a fine keyword.");
+        contents.add(keywordField, gbc);
+        gbc.gridy++;
+        gbc.gridy++;
+
+        sitePass = new JLabel(TEXT_WHEN_NO_SITE_PASS);
+        sitePass.setToolTipText("Click here to copy site pass to clipboard.");
+        sitePass.setMinimumSize(new Dimension(10, 20));
+        sitePass.setMaximumSize(new Dimension(10, 20));
+        sitePass.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        sitePass.setVerticalAlignment(JLabel.CENTER);
         sitePass.addMouseListener(new ClickListener(this, SITE_PASS_ID));
-        mainView.add(sitePass);
+        contents.add(sitePass, gbc);
 
         mainView.setFocusable(true);
         mainView.requestFocus();
@@ -150,17 +208,38 @@ public class GUI {
         mainView.addMouseMotionListener(inputEntropyListener);
         mainView.addKeyListener(inputEntropyListener);
 
-        KeywordListener keywordListener = new KeywordListener(this);
-        keywordField.getDocument().addDocumentListener(keywordListener);
+        keywordField.getDocument().addDocumentListener(new TextListener(this, TEXT_FIELD_KEYWORD_ID));
         keywordField.addKeyListener(inputEntropyListener);
 
-        viewHolder.add(mainView, MAIN_VIEW_ID);
+        mainView.add(contents);
+    }
+
+    public void textFieldChanged(int id) {
+        switch (id) {
+            case TEXT_FIELD_MASTER_PASS_ID:
+                if (locked && baoPass.decryptMasterKey(masterPassField.getText())) {
+                    openLock();
+                } else {
+                    closeLock();
+                }
+                break;
+            case TEXT_FIELD_KEYWORD_ID:
+                try {
+                    generateSitePass();
+                } catch (Exception ex) {
+                    System.err.println("Error generating site pass: " + ex.toString());
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     public void userClicked(int id) {
         switch (id) {
             case LOCK_ID:
-                lockClicked();
+                masterPassField.setText("");
+                closeLock();
                 break;
             case SITE_PASS_ID:
                 sitePassClicked();
@@ -183,18 +262,23 @@ public class GUI {
 
     }
 
-    private void lockClicked() {
+    private void closeLock() {
         if (!locked) {
             baoPass.forgetMasterKeyPlainText();
-            changeLockState();
-        } else if (baoPass.decryptMasterKey()) {
-            changeLockState();
+            keywordField.setText("");
+            sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
+            locked = true;
+            lockIcon.setIcon(closedLockIcon);
+            lockIcon.setToolTipText(TOOLTIP_CLOSED_LOCK);
         }
     }
 
-    private void changeLockState() {
-        locked = !locked;
-        lockIcon.setIcon(locked ? closedLockIcon : openLockIcon);
+    private void openLock() {
+        if (locked) {
+            locked = false;
+            lockIcon.setIcon(openLockIcon);
+            lockIcon.setToolTipText(TOOLTIP_OPEN_LOCK);
+        }
     }
 
     private void sitePassClicked() {
@@ -204,7 +288,7 @@ public class GUI {
     public void generateSitePass() throws Exception {
         String kw = keywordField.getText();
         if (kw.isEmpty()) {
-            sitePass.setText("Site password");
+            sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
         } else {
             char[] pass = baoPass.generateSitePass(kw.toCharArray());
             sitePass.setText(new String(pass));

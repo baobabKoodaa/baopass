@@ -40,6 +40,7 @@ public class Utils {
     }
 
     public static void wipe(byte[] b) {
+        if (b == null) return;
         for (int i=0; i<b.length; i++) {
             b[i] = b[i] = '0';
         }
@@ -48,6 +49,7 @@ public class Utils {
     }
 
     public static void wipe(char[] b) {
+        if (b == null) return;
         for (int i=0; i<b.length; i++) {
             b[i] = b[i] = '0';
         }
