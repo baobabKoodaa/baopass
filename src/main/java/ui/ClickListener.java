@@ -26,7 +26,6 @@ public class ClickListener implements MouseListener, ActionListener, MenuListene
     @Override
     public void actionPerformed(ActionEvent e) {
         /* For checkboxes and menu items, etc. */
-        System.out.println("moi");
         gui.userClicked(id);
     }
 

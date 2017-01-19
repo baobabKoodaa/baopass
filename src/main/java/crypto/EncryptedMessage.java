@@ -114,5 +114,33 @@ public class EncryptedMessage {
         this.keyLengthPBKDF2 = keyLengthPBKDF2;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
+        EncryptedMessage that = (EncryptedMessage) o;
+
+        if (iterationsPBKDF2 != that.iterationsPBKDF2)
+            return false;
+        if (keyLengthPBKDF2 != that.keyLengthPBKDF2)
+            return false;
+        if (!Arrays.equals(cipherText, that.cipherText))
+            return false;
+        if (!Arrays.equals(salt, that.salt))
+            return false;
+        return Arrays.equals(iv, that.iv);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(cipherText);
+        result = 31 * result + Arrays.hashCode(salt);
+        result = 31 * result + Arrays.hashCode(iv);
+        result = 31 * result + iterationsPBKDF2;
+        result = 31 * result + keyLengthPBKDF2;
+        return result;
+    }
 }

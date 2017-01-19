@@ -121,4 +121,11 @@ public class BaoPass {
         this.preferenceRememberKey = b;
     }
 
+    public EncryptedMessage getMasterKeyEncrypted() {
+        return masterKeyEncrypted;
+    }
+
+    public void setMasterKeyEncrypted(EncryptedMessage masterKeyEncrypted) {
+        this.masterKeyEncrypted = masterKeyEncrypted;
+    }
 }

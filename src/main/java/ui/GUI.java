@@ -24,7 +24,8 @@ public class GUI {
     private static final int TEXT_FIELD_KEYWORD_ID = 7;
     private static final int MENU_ABOUT_ID = 8;
     private static final int MENU_SWITCH_KEY_ID = 9;
-    private static final int BUTTON_OK_NOTIFICATION_ID = 10;
+    private static final int MENU_HIDE_SITE_PASS_ID = 10;
+    private static final int BUTTON_OK_NOTIFICATION_ID = 11;
 
     /* IDs for different GUI views. */
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
@@ -57,7 +58,8 @@ public class GUI {
     private EntropyListener inputEntropyListener;
     private JLabel sitePass;
 
-    private JMenuItem menuItemSwitchKey;
+    private JMenuItem menuSwitchKey;
+    private JCheckBoxMenuItem menuHideSitePass;
     private JMenu aboutMenu;
 
     private JLabel lockIcon;
@@ -140,20 +142,28 @@ public class GUI {
     private void createMenu() {
         JMenuBar menuBar = new JMenuBar();
 
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setFont(regularFont);
+        menuSwitchKey = new JMenuItem("Switch active key");
+        menuSwitchKey.setFont(regularFont);
+        menuSwitchKey.addActionListener(new ClickListener(this, MENU_SWITCH_KEY_ID));
+        fileMenu.add(menuSwitchKey);
+
         JMenu optionsMenu = new JMenu("Options");
         optionsMenu.setFont(regularFont);
-        menuItemSwitchKey = new JMenuItem("Switch active key");
-        menuItemSwitchKey.setFont(regularFont);
-        menuItemSwitchKey.addActionListener(new ClickListener(this, MENU_SWITCH_KEY_ID));
-        optionsMenu.add(menuItemSwitchKey);
-        menuBar.add(optionsMenu);
+
+        menuHideSitePass = new JCheckBoxMenuItem("Hide site pass");
+        menuHideSitePass.setFont(regularFont);
+        menuHideSitePass.addActionListener(new ClickListener(this, MENU_HIDE_SITE_PASS_ID));
+        optionsMenu.add(menuHideSitePass);
 
         aboutMenu = new JMenu("About");
         aboutMenu.setFont(regularFont);
         aboutMenu.addMouseListener(new ClickListener(this, MENU_ABOUT_ID));
 
+        menuBar.add(fileMenu);
+        menuBar.add(optionsMenu);
         menuBar.add(aboutMenu);
-
         frame.setJMenuBar(menuBar);
     }
 
@@ -324,7 +334,7 @@ public class GUI {
                 baoPass.setPreferenceRememberKey(!baoPass.getPreferenceRememberKey());
                 break;
             case MENU_ABOUT_ID:
-                notificationText.setText("<html>BaoPass by Baobab, unreleased<br>developer version. For updates, please<br>visit https://baobab.fi/baopass");
+                notificationText.setText("<html>BaoPass by Baobab, unreleased<br>developer version. For updates,<br>visit https://baobab.fi/baopass");
                 changeView(NOTIFICATION_VIEW_ID);
                 SwingUtilities.invokeLater(deselectAboutMenu);
                 break;
@@ -334,6 +344,9 @@ public class GUI {
             case MENU_SWITCH_KEY_ID:
                 closeLock();
                 changeView(FIRST_LAUNCH_VIEW_ID);
+                break;
+            case MENU_HIDE_SITE_PASS_ID:
+                //TODO: async ? menuHideSitePass.getState() ? save to preferences + actually hide site pass
                 break;
             default:
                 break;
@@ -384,52 +397,12 @@ public class GUI {
         mainView.repaint();
     }
 
-    private class Canvas extends JPanel {
-        //@Override
-        public void paintComponentx(Graphics g) {
-            Graphics2D g2d = (Graphics2D) g;
-
-            g2d.setColor(Color.BLACK);
-            //g2d.drawString("Testijuttu", 100, 100);
-        }
-
-    }
-
-    public void userClickedOn(Point point) {
-        try {
-            char[] mkey = baoPass.generateMasterKey();
-            baoPass.setMasterKeyPlainText(mkey);
-            for (int i=1; i<=100; i++) {
-                //char[] sitekey = baoPass.generateSitePass(mkey, ("facebook" + i).toCharArray());
-                //System.out.println("Site key length " + sitekey.length + " contents " + new String(sitekey));
-            }
-
-
-            //String temp1 = new String(mkey);
-            //EncryptedMessage enc = AES.encrypt(new String(mkey).getBytes(), "passu".toCharArray());
-            //System.out.println("cipher length " + enc.getCipherText().length + " had input length " + new String(mkey).getBytes().length);
-            //enc.saveToFile("test.txt");
-            //enc = new EncryptedMessage("test.txt");
-            //String temp2 = new String(AES.decrypt(enc, "passu".toCharArray()));
-            //System.out.println("********* Match ? " + temp1.equals(temp2));
-            //System.out.println("          first " + temp1);
-            //System.out.println("          secon " + temp2);
-            //System.out.println("          ciphe " + new String(enc.getCipherText()));
-
-
-        } catch (Exception ex) {
-            System.out.println("Error " + ex.toString());
-        }
-        repaint();
-    }
-
-
     public static Point getPoint(MouseEvent e) {
         return new Point(e.getY(), e.getX());
     }
 
     private void changeView(String nextViewId) {
-        menuItemSwitchKey.setEnabled(nextViewId.equals(FIRST_LAUNCH_VIEW_ID) ? false : true);
+        menuSwitchKey.setEnabled(nextViewId.equals(FIRST_LAUNCH_VIEW_ID) ? false : true);
         aboutMenu.setEnabled(nextViewId.equals(NOTIFICATION_VIEW_ID) ? false : true);
         previousViewId = currentViewId;
         currentViewId = nextViewId;
