@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.security.SecureRandom;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static crypto.Utils.byteArrayEquals;
+import static crypto.Utils.charArrayEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /** Make sure reversible operations are actually reversible. */
 public class RetrievabilityTest {
@@ -39,6 +40,11 @@ public class RetrievabilityTest {
                 assertEquals(originalMasterKeyChars[i], returnedChars[i]);
             }
 
+            /* Test that cipherText is not accidentally plain text master key in a different encoding. */
+            assertFalse(charArrayEquals(originalMasterKeyChars, Utils.getUrlSafeCharsFromBytes(enc.getCipherText())));
+            assertFalse(charArrayEquals(originalMasterKeyChars, new String(enc.getCipherText()).toCharArray()));
+            assertFalse(byteArrayEquals(masterKeyBytes, enc.getCipherText()));
+
             /* File ops: Test that loading a saved EncryptedMessage returns the original. */
             enc.saveToFile("target/temp.txt");
             EncryptedMessage enc2 = new EncryptedMessage(new File("target/temp.txt"));
@@ -61,9 +67,7 @@ public class RetrievabilityTest {
 
             /* Convert back to bytes. Do we get the same array back? */
             byte[] back = Utils.getBytesFromUrlSafeChars(chars);
-            for (int j=0; j<i; j++) {
-                assertTrue(orig[j] == back[j]);
-            }
+            assertTrue(byteArrayEquals(orig, back));
         }
     }
 
@@ -86,7 +90,5 @@ public class RetrievabilityTest {
         }
         return (j==chars.length);
     }
-
-    // TODO: test we are actually using master key to generate site pass (rather than encrypted master key or something)
 
 }

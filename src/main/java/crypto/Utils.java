@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class Utils {
@@ -40,18 +41,18 @@ public class Utils {
     }
 
     public static void wipe(byte[] b) {
-        if (b == null) return;
+        if (b == null || b.length == 0) return;
         for (int i=0; i<b.length; i++) {
-            b[i] = b[i] = '0';
+            b[i] = '0';
         }
         /* Below line is just to stop compilers from 'optimizing' this method away. */
         if (b[b.length - b[0] + b[b.length-1] - 1] != '0') throw new RuntimeException();
     }
 
     public static void wipe(char[] b) {
-        if (b == null) return;
+        if (b == null || b.length == 0) return;
         for (int i=0; i<b.length; i++) {
-            b[i] = b[i] = '0';
+            b[i] = '0';
         }
         /* Below line is just to stop compilers from 'optimizing' this method away. */
         if (b[b.length - b[0] + b[b.length-1] - 1] != '0') throw new RuntimeException();
@@ -88,6 +89,27 @@ public class Utils {
         if (overwriteOriginal) {
             wipe(src);
         }
+    }
+
+
+    public static boolean charArrayEquals(char[] a, char[] b) {
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0; i<a.length; i++) {
+            if (a[i] != b[i]) return false;
+        }
+        return true;
+    }
+
+    public static boolean byteArrayEquals(byte[] a, byte[] b) {
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0; i<a.length; i++) {
+            if (a[i] != b[i]) return false;
+        }
+        return true;
     }
 
 

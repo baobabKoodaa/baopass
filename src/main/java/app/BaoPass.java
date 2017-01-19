@@ -44,9 +44,8 @@ public class BaoPass {
         GUI gui = new GUI(this, entropyCollector, initialView);
     }
 
-    public boolean createNewMasterKey(char[] passwordForEncryption) {
+    public boolean encryptMasterKey(char[] passwordForEncryption) {
         try {
-            masterKeyPlainText = generateMasterKey();
             masterKeyEncrypted = AES.encrypt(new String(masterKeyPlainText).getBytes(), passwordForEncryption);
             forgetMasterKeyPlainText();
             /* TODO: save to file.
@@ -60,11 +59,17 @@ public class BaoPass {
         return false;
     }
 
-    public char[] generateMasterKey() throws NoSuchAlgorithmException, UnsupportedEncodingException {
-        byte[] keyPartFromMainEntropySource = requestRandomBytesFromOS(32);
-        byte[] keyPartFromAdditionalEntropy = entropyCollector.consume(16);
-        byte[] masterKey = combine(keyPartFromMainEntropySource, keyPartFromAdditionalEntropy, true);
-        return getUrlSafeCharsFromBytes(masterKey);
+    public char[] generateMasterKey() {
+        try {
+            byte[] keyPartFromMainEntropySource = requestRandomBytesFromOS(32);
+            byte[] keyPartFromAdditionalEntropy = entropyCollector.consume(16);
+            byte[] masterKey = combine(keyPartFromMainEntropySource, keyPartFromAdditionalEntropy, true);
+            masterKeyPlainText = getUrlSafeCharsFromBytes(masterKey);
+            return masterKeyPlainText;
+        } catch (UnsupportedEncodingException|NoSuchAlgorithmException ex) {
+            System.err.println(ex.toString());
+            return null;
+        }
     }
 
     public char[] generateSitePass(char[] keyword) throws Exception {

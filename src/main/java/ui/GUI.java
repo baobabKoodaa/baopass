@@ -12,6 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import static crypto.Utils.charArrayEquals;
+import static crypto.Utils.wipe;
+
 public class GUI {
 
     /* IDs for different GUI elements. */
@@ -26,13 +29,17 @@ public class GUI {
     private static final int MENU_SWITCH_KEY_ID = 9;
     private static final int MENU_HIDE_SITE_PASS_ID = 10;
     private static final int BUTTON_OK_NOTIFICATION_ID = 11;
+    private static final int TEXT_FIELD_CREATE_MPW1_ID = 12;
+    private static final int TEXT_FIELD_CREATE_MPW2_ID = 13;
+    private static final int BUTTON_ENCRYPT_ID = 14;
 
     /* IDs for different GUI views. */
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
     public static final String FIRST_LAUNCH_VIEW_ID = "FIRST_LAUNCH_VIEW_ID";
     public static final String NOTIFICATION_VIEW_ID = "NOTIFICATION_VIEW_ID";
-    private String previousViewId = FIRST_LAUNCH_VIEW_ID;
+    public static final String NEW_KEY_VIEW_ID = "NEW_KEY_VIEW_ID";
     private String currentViewId = FIRST_LAUNCH_VIEW_ID;
+    private String nextViewId = FIRST_LAUNCH_VIEW_ID;
 
     /* Static texts displayed to user. */
     public static final String TEXT_WHEN_NO_SITE_PASS = " "; // layout breaks if space is removed
@@ -44,6 +51,7 @@ public class GUI {
     private JPanel viewHolder;
     private JPanel mainView;
     private JPanel firstLaunchView;
+    private JPanel newKeyView;
 
     private JPanel notificationView;
     private JLabel notificationText;
@@ -68,7 +76,11 @@ public class GUI {
     private ImageIcon openLockIcon;
 
     private JTextField keywordField;
-    private JTextField masterPassField;
+    private JPasswordField masterPassField;
+
+    private JPasswordField createMPW1;
+    private JPasswordField createMPW2;
+    private JButton buttonEncrypt;
 
     public GUI(BaoPass baoPass, EntropyCollector entropyCollector, String initialView) throws Exception {
         this.baoPass = baoPass;
@@ -87,6 +99,7 @@ public class GUI {
         createMainView();
         createFirstLaunchView();
         createNotificationView();
+        createNewKeyView();
 
         String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
         for ( int i = 0; i < fonts.length; i++ ) {
@@ -213,6 +226,49 @@ public class GUI {
         return button;
     }
 
+    private void createNewKeyView() {
+        newKeyView = new JPanel();
+        newKeyView.setPreferredSize(dimension);
+        newKeyView.setLayout(new GridBagLayout());
+        viewHolder.add(newKeyView, NEW_KEY_VIEW_ID);
+
+        JPanel contents = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 3, 5, 3);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.ipady = 5;
+        gbc.anchor = GridBagConstraints.EAST;
+
+        /* Text labels. */
+        JLabel labelMPW1 = new JLabel("Choose a password: ");
+        labelMPW1.setFont(regularFont);
+        contents.add(labelMPW1, gbc);
+        gbc.gridy++;
+        JLabel labelMPW2 = new JLabel("Retype password:");
+        labelMPW2.setFont(regularFont);
+        contents.add(labelMPW2, gbc);
+        gbc.gridy++;
+        gbc.gridx++;
+        gbc.gridy = 0;
+
+        /* Create master password fields. */
+        createMPW1 = new JPasswordField(11);
+        contents.add(createMPW1, gbc);
+        gbc.gridy++;
+        createMPW2 = new JPasswordField(11);
+        contents.add(createMPW2, gbc);
+        gbc.gridy++;
+        gbc.gridy++;
+
+        buttonEncrypt = createButton("Encrypt");
+        buttonEncrypt.addMouseListener(new ClickListener(this, BUTTON_ENCRYPT_ID));
+        contents.add(buttonEncrypt, gbc);
+
+        addEntropyListeners(newKeyView);
+        newKeyView.add(contents);
+    }
+
     private void createMainView() throws IOException {
         mainView = new JPanel();
         mainView.setPreferredSize(dimension);
@@ -321,8 +377,15 @@ public class GUI {
                 sitePassClicked();
                 break;
             case BUTTON_NEW_MASTER_KEY_ID:
-                if (baoPass.createNewMasterKey("passu".toCharArray())) {
-                    changeView(MAIN_VIEW_ID);
+                if (baoPass.generateMasterKey() != null) {
+                    notificationText.setText("<html>Your random keyfile has been<br>" +
+                                                   "generated succesfully. It will<br>" +
+                                                   "be encrypted with your master<br>" +
+                                                   "password. Please choose a strong<br>" +
+                                                   "password and hide a paper copy<br>" +
+                                                   "of it at a safe place.");
+                    changeView(NOTIFICATION_VIEW_ID);
+                    nextViewId = NEW_KEY_VIEW_ID;
                 }
                 break;
             case BUTTON_LOAD_MASTER_KEY_ID:
@@ -333,13 +396,34 @@ public class GUI {
             case CHECKBOX_REMEMBER_KEY_ID:
                 baoPass.setPreferenceRememberKey(!baoPass.getPreferenceRememberKey());
                 break;
+            case BUTTON_ENCRYPT_ID:
+                char[] pw1 = createMPW1.getPassword();
+                char[] pw2 = createMPW2.getPassword();
+                if (!charArrayEquals(pw1, pw2)) {
+                    System.out.println("not equals");
+                    // TODO: complain
+                }
+                else if (baoPass.encryptMasterKey(pw1)) {
+                    notificationText.setText( "<html>Your keyfile has been saved<br>" +
+                                                    "as key1.txt. You should backup<br>" +
+                                                    "this file to another device now.<br>" +
+                                                    "Your passwords can not be reco-<br>" +
+                                                    "vered if you lose your keyfile or<br>" +
+                                                    "forget your master password.");
+                    wipePasswordFields();
+                    changeView(NOTIFICATION_VIEW_ID);
+                    nextViewId = MAIN_VIEW_ID;
+                } else {
+                    // TODO: print error
+                }
+                break;
             case MENU_ABOUT_ID:
                 notificationText.setText("<html>BaoPass by Baobab, unreleased<br>developer version. For updates,<br>visit https://baobab.fi/baopass");
                 changeView(NOTIFICATION_VIEW_ID);
                 SwingUtilities.invokeLater(deselectAboutMenu);
                 break;
             case BUTTON_OK_NOTIFICATION_ID:
-                changeView(previousViewId);
+                changeView(nextViewId);
                 break;
             case MENU_SWITCH_KEY_ID:
                 closeLock();
@@ -401,12 +485,24 @@ public class GUI {
         return new Point(e.getY(), e.getX());
     }
 
-    private void changeView(String nextViewId) {
-        menuSwitchKey.setEnabled(nextViewId.equals(FIRST_LAUNCH_VIEW_ID) ? false : true);
-        aboutMenu.setEnabled(nextViewId.equals(NOTIFICATION_VIEW_ID) ? false : true);
-        previousViewId = currentViewId;
-        currentViewId = nextViewId;
-        cardLayout.show(viewHolder, nextViewId);
+    public void wipePasswordFields() {
+        createMPW1.setText("");
+        createMPW2.setText("");
+        masterPassField.setText("");
+        wipe(createMPW1.getPassword());
+        wipe(createMPW2.getPassword());
+        wipe(masterPassField.getPassword());
+    }
+
+    private void changeView(String viewId) {
+        menuSwitchKey.setEnabled(viewId.equals(FIRST_LAUNCH_VIEW_ID) ? false : true);
+        aboutMenu.setEnabled(viewId.equals(NOTIFICATION_VIEW_ID) ? false : true);
+        if (viewId.equals(FIRST_LAUNCH_VIEW_ID)) {
+            wipePasswordFields();
+        }
+        nextViewId = currentViewId; /* Default assumption, sometimes overriden after calling this. */
+        currentViewId = viewId;
+        cardLayout.show(viewHolder, viewId);
     }
 
     private File askUserForFile() {
