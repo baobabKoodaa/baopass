@@ -1,12 +1,14 @@
 package ui;
 
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 /** Separate instance of ClickListener for each clickable object. */
-public class ClickListener implements MouseListener, ActionListener {
+public class ClickListener implements MouseListener, ActionListener, MenuListener {
 
     GUI gui;
     int id;
@@ -23,7 +25,14 @@ public class ClickListener implements MouseListener, ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        /* Checkbox state changed. */
+        /* For checkboxes and menu items, etc. */
+        System.out.println("moi");
+        gui.userClicked(id);
+    }
+
+    @Override
+    public void menuSelected(MenuEvent e) {
+        System.out.println(e.toString());
         gui.userClicked(id);
     }
 
@@ -47,5 +56,13 @@ public class ClickListener implements MouseListener, ActionListener {
 
     }
 
+    @Override
+    public void menuDeselected(MenuEvent e) {
 
+    }
+
+    @Override
+    public void menuCanceled(MenuEvent e) {
+
+    }
 }

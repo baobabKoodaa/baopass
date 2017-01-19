@@ -7,6 +7,8 @@ import app.BaoPass;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 
 public class GUI {
 
+    /* IDs for different GUI elements. */
     private static final int LOCK_ID = 1;
     private static final int SITE_PASS_ID = 2;
     private static final int BUTTON_LOAD_MASTER_KEY_ID = 3;
@@ -21,11 +24,15 @@ public class GUI {
     private static final int CHECKBOX_REMEMBER_KEY_ID = 5;
     private static final int TEXT_FIELD_MASTER_PASS_ID = 6;
     private static final int TEXT_FIELD_KEYWORD_ID = 7;
+    private static final int MENU_ABOUT_ID = 8;
+    private static final int MENU_SWITCH_KEY_ID = 9;
 
+    /* IDs for different GUI views. */
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
     public static final String FIRST_LAUNCH_VIEW_ID = "FIRST_LAUNCH_VIEW_ID";
 
-    public static final String TEXT_WHEN_NO_SITE_PASS = " ";
+    /* Static texts displayed to user. */
+    public static final String TEXT_WHEN_NO_SITE_PASS = " "; // layout breaks if space is removed
     public static final String TOOLTIP_OPEN_LOCK = "Click here to lock down.";
     public static final String TOOLTIP_CLOSED_LOCK = "Please insert master password to decrypt keyfile.";
 
@@ -43,6 +50,8 @@ public class GUI {
     private EntropyListener inputEntropyListener;
     private JLabel sitePass;
 
+    private JMenu aboutMenu;
+
     private JLabel lockIcon;
     private boolean locked;
     private ImageIcon closedLockIcon;
@@ -56,7 +65,7 @@ public class GUI {
         this.entropyCollector = entropyCollector;
         this.inputEntropyListener = new EntropyListener(entropyCollector);
 
-        dimension = new Dimension(300, 170);
+        dimension = new Dimension(300, 145);
         regularFont = new Font("Tahoma", Font.PLAIN, 12);
         frame = new JFrame("BaoPass");
         loadAppIcon();
@@ -64,6 +73,7 @@ public class GUI {
         cardLayout = new CardLayout();
         viewHolder.setLayout(cardLayout);
 
+        createMenu();
         createMainView();
         createFirstLaunchView();
 
@@ -79,6 +89,26 @@ public class GUI {
         frame.pack();
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);
+    }
+
+    private void createMenu() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu optionsMenu = new JMenu("Options");
+        optionsMenu.setFont(regularFont);
+        JMenuItem switchKey = new JMenuItem("Switch active key");
+        switchKey.setFont(regularFont);
+        switchKey.addActionListener(new ClickListener(this, MENU_SWITCH_KEY_ID));
+        optionsMenu.add(switchKey);
+        menuBar.add(optionsMenu);
+
+        aboutMenu = new JMenu("About");
+        aboutMenu.setFont(regularFont);
+        aboutMenu.addMouseListener(new ClickListener(this, MENU_ABOUT_ID));
+
+        menuBar.add(aboutMenu);
+
+        frame.setJMenuBar(menuBar);
     }
 
     private void createFirstLaunchView() throws IOException {
@@ -167,7 +197,6 @@ public class GUI {
 
         /* Master pass field. */
         masterPassField = new JPasswordField(11);
-        masterPassField.setToolTipText("Your master password is needed to decrypt the keyfile.");
         masterPassField.getDocument().addDocumentListener(new TextListener(this, TEXT_FIELD_MASTER_PASS_ID));
         contents.add(masterPassField, gbc);
         gbc.gridx++;
@@ -187,15 +216,13 @@ public class GUI {
 
         /* Keyword field. */
         keywordField = new JTextField(11);
-        keywordField.setToolTipText("Keywords do not have to be secret, for example 'bank' is a fine keyword.");
+        //TODO: remember chosen keywords. https://docs.oracle.com/javase/tutorial/uiswing/components/combobox.html
         contents.add(keywordField, gbc);
         gbc.gridy++;
         gbc.gridy++;
 
         sitePass = new JLabel(TEXT_WHEN_NO_SITE_PASS);
         sitePass.setToolTipText("Click here to copy site pass to clipboard.");
-        sitePass.setMinimumSize(new Dimension(10, 20));
-        sitePass.setMaximumSize(new Dimension(10, 20));
         sitePass.setFont(new Font("Monospaced", Font.PLAIN, 16));
         sitePass.setVerticalAlignment(JLabel.CENTER);
         sitePass.addMouseListener(new ClickListener(this, SITE_PASS_ID));
@@ -256,11 +283,26 @@ public class GUI {
                 break;
             case CHECKBOX_REMEMBER_KEY_ID:
                 baoPass.setPreferenceRememberKey(!baoPass.getPreferenceRememberKey());
+                break;
+            case MENU_ABOUT_ID:
+                System.out.println("moi");
+                SwingUtilities.invokeLater(deselectAboutMenu);
+                break;
+            case MENU_SWITCH_KEY_ID:
+                closeLock();
+                changeView(FIRST_LAUNCH_VIEW_ID);
+                break;
             default:
                 break;
         }
 
     }
+
+    Runnable deselectAboutMenu = new Runnable() {
+        public void run() {
+            aboutMenu.setSelected(false);
+        }
+    };
 
     private void closeLock() {
         if (!locked) {
@@ -282,7 +324,7 @@ public class GUI {
     }
 
     private void sitePassClicked() {
-        sitePass.setText("Copied to clipboard");
+        sitePass.setText("Copied");
     }
 
     public void generateSitePass() throws Exception {

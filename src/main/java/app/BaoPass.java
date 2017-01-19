@@ -3,6 +3,7 @@ package app;
 import crypto.*;
 import ui.GUI;
 
+import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 
 import java.io.File;
@@ -16,6 +17,8 @@ public class BaoPass {
 
     /* Few iterations for site pass is ok, because master key has high entropy. */
     private static final int SITE_PASS_ITERATIONS = 276;
+
+    private static final String CRYPTO_EXPORT_RESTRICTIONS_ERROR = "Our efforts to use 256-bit keys were thwarped by Java's export restrictions on cryptography. You need to install the Cryptographic Policy Extensions from Oracle.";
 
     /* This variable determines generated site password length.
     *  Must be multiple of 3 for Base64 encoding. 9 bytes yields exactly 12 chars in Base64.
@@ -50,7 +53,7 @@ public class BaoPass {
             * TODO: if preferenceRememberKey then remember file. */
             return true;
         } catch (InvalidKeyException ex) {
-            System.err.println("Houston, we have a problem... Our efforts to use 256-bit keys were thwarped by Java's export restrictions on cryptography. You need to install the Cryptographic Policy Extensions from Oracle.");
+            System.err.println(CRYPTO_EXPORT_RESTRICTIONS_ERROR);
         } catch (Exception ex) {
             System.err.println("Internal failure! " + ex.toString());
         }
@@ -86,10 +89,15 @@ public class BaoPass {
         try {
             masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, masterPassword.toCharArray())).toCharArray();
             return true;
+        } catch (InvalidKeyException ex) {
+            System.err.println(CRYPTO_EXPORT_RESTRICTIONS_ERROR);
+        } catch (AEADBadTagException ex) {
+            /* Most likely invalid password. Don't report error, we try to decrypt on every keystroke. */
         } catch (Exception ex) {
-            /* Don't report error, we try to decrypt on every keystroke. */
-            return false;
+            /* Other unknown errors. */
+            System.err.println(ex.toString());
         }
+        return false;
     }
 
     public void forgetMasterKeyPlainText() {

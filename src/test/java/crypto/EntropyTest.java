@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BaoPassTest {
+public class EntropyTest {
 
     public static final int MASTER_KEY_LEN = 64;
     public static final int SITE_PASS_LEN = 12;
