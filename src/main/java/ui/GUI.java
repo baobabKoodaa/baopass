@@ -7,8 +7,6 @@ import app.BaoPass;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
@@ -26,10 +24,14 @@ public class GUI {
     private static final int TEXT_FIELD_KEYWORD_ID = 7;
     private static final int MENU_ABOUT_ID = 8;
     private static final int MENU_SWITCH_KEY_ID = 9;
+    private static final int BUTTON_OK_NOTIFICATION_ID = 10;
 
     /* IDs for different GUI views. */
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
     public static final String FIRST_LAUNCH_VIEW_ID = "FIRST_LAUNCH_VIEW_ID";
+    public static final String NOTIFICATION_VIEW_ID = "NOTIFICATION_VIEW_ID";
+    private String previousViewId = FIRST_LAUNCH_VIEW_ID;
+    private String currentViewId = FIRST_LAUNCH_VIEW_ID;
 
     /* Static texts displayed to user. */
     public static final String TEXT_WHEN_NO_SITE_PASS = " "; // layout breaks if space is removed
@@ -41,6 +43,11 @@ public class GUI {
     private JPanel viewHolder;
     private JPanel mainView;
     private JPanel firstLaunchView;
+
+    private JPanel notificationView;
+    private JLabel notificationText;
+    private JButton buttonOkNotification;
+
     private CardLayout cardLayout;
     private Dimension dimension;
     private Font regularFont;
@@ -50,6 +57,7 @@ public class GUI {
     private EntropyListener inputEntropyListener;
     private JLabel sitePass;
 
+    private JMenuItem menuItemSwitchKey;
     private JMenu aboutMenu;
 
     private JLabel lockIcon;
@@ -76,6 +84,7 @@ public class GUI {
         createMenu();
         createMainView();
         createFirstLaunchView();
+        createNotificationView();
 
         String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
         for ( int i = 0; i < fonts.length; i++ ) {
@@ -91,15 +100,52 @@ public class GUI {
         frame.setLocationRelativeTo(null);
     }
 
+    private void createNotificationView() {
+        //notificationView = new JPanel(new BorderLayout());
+        notificationView = new JPanel(new GridBagLayout());
+
+        JPanel inc2 = new JPanel(new BorderLayout());
+
+        notificationView.setPreferredSize(dimension);
+        //notificationView.setLayout(new GridBagLayout());
+        //notificationView.setLayout(new BorderLayout(50, 50));
+
+        JPanel textPane = new JPanel();
+        notificationText = new JLabel("Placeholder.");
+        notificationText.setHorizontalAlignment(JLabel.CENTER);
+        notificationText.setFont(regularFont);
+        textPane.add(notificationText);
+
+        JPanel inception = new JPanel();
+        JPanel buttonPane = new JPanel();
+        buttonOkNotification = createButton("OK");
+        buttonOkNotification.addActionListener(new ClickListener(this, BUTTON_OK_NOTIFICATION_ID));
+        buttonPane.add(buttonOkNotification);
+        inception.add(buttonPane);
+        viewHolder.add(notificationView, NOTIFICATION_VIEW_ID);
+
+        inc2.add(textPane, BorderLayout.PAGE_START);
+        inc2.add(inception, BorderLayout.CENTER);
+        notificationView.add(inc2);
+
+        addEntropyListeners(notificationView);
+    }
+
+    private void addEntropyListeners(JPanel view) {
+        view.addMouseListener(inputEntropyListener);
+        view.addMouseMotionListener(inputEntropyListener);
+        view.addKeyListener(inputEntropyListener);
+    }
+
     private void createMenu() {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu optionsMenu = new JMenu("Options");
         optionsMenu.setFont(regularFont);
-        JMenuItem switchKey = new JMenuItem("Switch active key");
-        switchKey.setFont(regularFont);
-        switchKey.addActionListener(new ClickListener(this, MENU_SWITCH_KEY_ID));
-        optionsMenu.add(switchKey);
+        menuItemSwitchKey = new JMenuItem("Switch active key");
+        menuItemSwitchKey.setFont(regularFont);
+        menuItemSwitchKey.addActionListener(new ClickListener(this, MENU_SWITCH_KEY_ID));
+        optionsMenu.add(menuItemSwitchKey);
         menuBar.add(optionsMenu);
 
         aboutMenu = new JMenu("About");
@@ -115,7 +161,6 @@ public class GUI {
         firstLaunchView = new JPanel();
         firstLaunchView.setPreferredSize(dimension);
         firstLaunchView.setLayout(new GridBagLayout());
-        //firstLaunchView.setBackground(new Color(255, 255, 255));
         viewHolder.add(firstLaunchView, FIRST_LAUNCH_VIEW_ID);
 
         JPanel buttons = new JPanel(new GridLayout(4, 1));
@@ -143,9 +188,7 @@ public class GUI {
         checkBoxRemember.addActionListener(new ClickListener(this, CHECKBOX_REMEMBER_KEY_ID));
         buttons.add(checkBoxRemember, BorderLayout.CENTER);
 
-        firstLaunchView.addMouseListener(inputEntropyListener);
-        firstLaunchView.addMouseMotionListener(inputEntropyListener);
-        firstLaunchView.addKeyListener(inputEntropyListener);
+        addEntropyListeners(firstLaunchView);
         firstLaunchView.add(buttons);
     }
 
@@ -231,13 +274,9 @@ public class GUI {
         mainView.setFocusable(true);
         mainView.requestFocus();
 
-        mainView.addMouseListener(inputEntropyListener);
-        mainView.addMouseMotionListener(inputEntropyListener);
-        mainView.addKeyListener(inputEntropyListener);
-
         keywordField.getDocument().addDocumentListener(new TextListener(this, TEXT_FIELD_KEYWORD_ID));
-        keywordField.addKeyListener(inputEntropyListener);
 
+        addEntropyListeners(mainView);
         mainView.add(contents);
     }
 
@@ -285,8 +324,12 @@ public class GUI {
                 baoPass.setPreferenceRememberKey(!baoPass.getPreferenceRememberKey());
                 break;
             case MENU_ABOUT_ID:
-                System.out.println("moi");
+                notificationText.setText("<html>BaoPass by Baobab, unreleased<br>developer version. For updates, please<br>visit https://baobab.fi/baopass");
+                changeView(NOTIFICATION_VIEW_ID);
                 SwingUtilities.invokeLater(deselectAboutMenu);
+                break;
+            case BUTTON_OK_NOTIFICATION_ID:
+                changeView(previousViewId);
                 break;
             case MENU_SWITCH_KEY_ID:
                 closeLock();
@@ -385,8 +428,12 @@ public class GUI {
         return new Point(e.getY(), e.getX());
     }
 
-    private void changeView(String view) {
-        cardLayout.show(viewHolder, view);
+    private void changeView(String nextViewId) {
+        menuItemSwitchKey.setEnabled(nextViewId.equals(FIRST_LAUNCH_VIEW_ID) ? false : true);
+        aboutMenu.setEnabled(nextViewId.equals(NOTIFICATION_VIEW_ID) ? false : true);
+        previousViewId = currentViewId;
+        currentViewId = nextViewId;
+        cardLayout.show(viewHolder, nextViewId);
     }
 
     private File askUserForFile() {
