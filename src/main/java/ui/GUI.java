@@ -3,14 +3,24 @@ package ui;
 import app.Main;
 import crypto.EntropyCollector;
 import app.BaoPass;
+import crypto.PBKDF2;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static crypto.Utils.charArrayEquals;
 import static crypto.Utils.wipe;
@@ -32,12 +42,16 @@ public class GUI {
     private static final int TEXT_FIELD_CREATE_MPW1_ID = 12;
     private static final int TEXT_FIELD_CREATE_MPW2_ID = 13;
     private static final int BUTTON_ENCRYPT_ID = 14;
+    private static final int MENU_CHANGE_MPW_ID = 15;
+    private static final int BUTTON_PERFORM_MPW_CHANGE_ID = 16;
+    private static final int BUTTON_CANCEL_MPW_CHANGE_ID = 17;
 
     /* IDs for different GUI views. */
     public static final String MAIN_VIEW_ID = "MAIN_VIEW_ID";
     public static final String FIRST_LAUNCH_VIEW_ID = "FIRST_LAUNCH_VIEW_ID";
     public static final String NOTIFICATION_VIEW_ID = "NOTIFICATION_VIEW_ID";
     public static final String NEW_KEY_VIEW_ID = "NEW_KEY_VIEW_ID";
+    public static final String CHANGE_MPW_VIEW_ID = "CHANGE_MPW_VIEW_ID";
     private String currentViewId = FIRST_LAUNCH_VIEW_ID;
     private String nextViewId = FIRST_LAUNCH_VIEW_ID;
 
@@ -46,12 +60,18 @@ public class GUI {
     public static final String TOOLTIP_OPEN_LOCK = "Click here to lock down.";
     public static final String TOOLTIP_CLOSED_LOCK = "Please insert master password to decrypt keyfile.";
 
+    /* Static parameters. */
+    public static final int SECONDS_TO_KEEP_SITE_PASS_IN_CLIPBOARD = 10;
+
+    /* Service for scheduled events. */
+    private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private JFrame frame;
     private JPanel viewHolder;
     private JPanel mainView;
     private JPanel firstLaunchView;
     private JPanel newKeyView;
+    private JPanel changeMPWView;
 
     private JPanel notificationView;
     private JLabel notificationText;
@@ -67,6 +87,7 @@ public class GUI {
     private JLabel sitePass;
 
     private JMenuItem menuSwitchKey;
+    private JMenuItem menuChangeMPW;
     private JCheckBoxMenuItem menuHideSitePass;
     private JMenu aboutMenu;
 
@@ -76,17 +97,68 @@ public class GUI {
     private ImageIcon openLockIcon;
 
     private JTextField keywordField;
-    private JPasswordField masterPassField;
 
-    private JPasswordField createMPW1;
-    private JPasswordField createMPW2;
-    private JButton buttonEncrypt;
+    private JPasswordField MPW_FIELD_IN_MAIN_VIEW;
+    private JPasswordField MPW1_FIELD_IN_NEW_KEY_VIEW;
+    private JPasswordField MPW2_FIELD_IN_NEW_KEY_VIEW;
+    private JPasswordField MPW1_FIELD_IN_CHANGE_MPW_VIEW;
+    private JPasswordField MPW2_FIELD_IN_CHANGE_MPW_VIEW;
+    private JPasswordField MPW_OLD_FIELD_IN_CHANGE_MPW_VIEW;
+
+    private JButton buttonEncryptNewKey;
+    private JButton buttonEncryptOldKey;
+    private JButton buttonCancelMPWChange;
+
+    private String hashOfWhatWeSetClipboardTo;
 
     public GUI(BaoPass baoPass, EntropyCollector entropyCollector, String initialView) throws Exception {
         this.baoPass = baoPass;
         this.entropyCollector = entropyCollector;
         this.inputEntropyListener = new EntropyListener(entropyCollector);
+        initFrame();
 
+        /* Create GUI contents */
+        createMenu();
+        createMainView();
+        createFirstLaunchView();
+        createNotificationView();
+        createNewKeyView();
+        createChangeMPWView();
+
+        packFrame(initialView);
+    }
+
+    private void sitePassClicked() {
+        copySitePassToClipboard();
+        sitePass.setText("Copied");
+    }
+
+    private void openLock() {
+        if (locked) {
+            locked = false;
+            lockIcon.setIcon(openLockIcon);
+            lockIcon.setToolTipText(TOOLTIP_OPEN_LOCK);
+        }
+    }
+
+    private void closeLock() {
+        if (!locked) {
+            baoPass.forgetMasterKeyPlainText();
+            keywordField.setText("");
+            sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
+            locked = true;
+            lockIcon.setIcon(closedLockIcon);
+            lockIcon.setToolTipText(TOOLTIP_CLOSED_LOCK);
+        }
+    }
+
+
+
+
+
+    /** Actions to take at the beginning of constructing the GUI. */
+    private void initFrame() {
+        entropyCollector.collect(System.nanoTime());
         dimension = new Dimension(300, 145);
         regularFont = new Font("Tahoma", Font.PLAIN, 12);
         frame = new JFrame("BaoPass");
@@ -94,25 +166,17 @@ public class GUI {
         viewHolder = new JPanel();
         cardLayout = new CardLayout();
         viewHolder.setLayout(cardLayout);
+    }
 
-        createMenu();
-        createMainView();
-        createFirstLaunchView();
-        createNotificationView();
-        createNewKeyView();
-
-        String fonts[] = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        for ( int i = 0; i < fonts.length; i++ ) {
-            //System.out.println(fonts[i]);
-        }
-
-        changeView(FIRST_LAUNCH_VIEW_ID);
-
+    /** Actions to take at the end of constructing the GUI. */
+    private void packFrame(String initialView) {
+        changeView(initialView);
         frame.add(viewHolder);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);
+        entropyCollector.collect(System.nanoTime());
     }
 
     private void createNotificationView() {
@@ -157,10 +221,15 @@ public class GUI {
 
         JMenu fileMenu = new JMenu("File");
         fileMenu.setFont(regularFont);
-        menuSwitchKey = new JMenuItem("Switch active key");
+        menuSwitchKey = new JMenuItem("Switch active keyfile");
         menuSwitchKey.setFont(regularFont);
         menuSwitchKey.addActionListener(new ClickListener(this, MENU_SWITCH_KEY_ID));
         fileMenu.add(menuSwitchKey);
+
+        menuChangeMPW = new JMenuItem("Change master password");
+        menuChangeMPW.setFont(regularFont);
+        menuChangeMPW.addActionListener(new ClickListener(this, MENU_CHANGE_MPW_ID));
+        fileMenu.add(menuChangeMPW);
 
         JMenu optionsMenu = new JMenu("Options");
         optionsMenu.setFont(regularFont);
@@ -248,25 +317,87 @@ public class GUI {
         JLabel labelMPW2 = new JLabel("Retype password:");
         labelMPW2.setFont(regularFont);
         contents.add(labelMPW2, gbc);
-        gbc.gridy++;
         gbc.gridx++;
         gbc.gridy = 0;
 
         /* Create master password fields. */
-        createMPW1 = new JPasswordField(11);
-        contents.add(createMPW1, gbc);
+        MPW1_FIELD_IN_NEW_KEY_VIEW = new JPasswordField(11);
+        contents.add(MPW1_FIELD_IN_NEW_KEY_VIEW, gbc);
         gbc.gridy++;
-        createMPW2 = new JPasswordField(11);
-        contents.add(createMPW2, gbc);
+        MPW2_FIELD_IN_NEW_KEY_VIEW = new JPasswordField(11);
+        contents.add(MPW2_FIELD_IN_NEW_KEY_VIEW, gbc);
         gbc.gridy++;
         gbc.gridy++;
 
-        buttonEncrypt = createButton("Encrypt");
-        buttonEncrypt.addMouseListener(new ClickListener(this, BUTTON_ENCRYPT_ID));
-        contents.add(buttonEncrypt, gbc);
+        buttonEncryptNewKey = createButton("Encrypt");
+        buttonEncryptNewKey.addMouseListener(new ClickListener(this, BUTTON_ENCRYPT_ID));
+        contents.add(buttonEncryptNewKey, gbc);
 
         addEntropyListeners(newKeyView);
         newKeyView.add(contents);
+    }
+
+    private void createChangeMPWView() {
+        // old password
+        // new password
+        // retype
+        // encrypt / cancel
+
+        changeMPWView = new JPanel();
+        changeMPWView.setPreferredSize(dimension);
+        changeMPWView.setLayout(new GridBagLayout());
+        viewHolder.add(changeMPWView, CHANGE_MPW_VIEW_ID);
+
+        JPanel contents = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 3, 0, 3);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.ipady = 5;
+        gbc.anchor = GridBagConstraints.EAST;
+
+        /* Text labels. */
+        JLabel labelMPW0 = new JLabel("Old password: ");
+        labelMPW0.setFont(regularFont);
+        contents.add(labelMPW0, gbc);
+        gbc.gridy++;
+        JLabel labelMPW1 = new JLabel("New password: ");
+        labelMPW1.setFont(regularFont);
+        contents.add(labelMPW1, gbc);
+        gbc.gridy++;
+        JLabel labelMPW2 = new JLabel("Retype password:");
+        labelMPW2.setFont(regularFont);
+        contents.add(labelMPW2, gbc);
+        gbc.gridx++;
+        gbc.gridy = 0;
+
+        /* Old password field */
+        MPW_OLD_FIELD_IN_CHANGE_MPW_VIEW = new JPasswordField(14);
+        contents.add(MPW_OLD_FIELD_IN_CHANGE_MPW_VIEW, gbc);
+        gbc.gridy++;
+
+        /* Reuse "create MPW" fields from "New key view". */
+        MPW1_FIELD_IN_CHANGE_MPW_VIEW = new JPasswordField(14);
+        contents.add(MPW1_FIELD_IN_CHANGE_MPW_VIEW, gbc);
+        gbc.gridy++;
+        MPW2_FIELD_IN_CHANGE_MPW_VIEW = new JPasswordField(14);
+        contents.add(MPW2_FIELD_IN_CHANGE_MPW_VIEW, gbc);
+        gbc.gridy++;
+        gbc.gridy++;
+
+        JPanel buttons = new JPanel();
+        buttons.setLayout(new GridLayout());
+        buttonCancelMPWChange = createButton("Cancel");
+        buttonCancelMPWChange.addMouseListener(new ClickListener(this, BUTTON_CANCEL_MPW_CHANGE_ID));
+        buttonEncryptOldKey = createButton("Change");
+        buttonEncryptOldKey.addMouseListener(new ClickListener(this, BUTTON_PERFORM_MPW_CHANGE_ID));
+
+        buttons.add(buttonCancelMPWChange);
+        buttons.add(buttonEncryptOldKey);
+        contents.add(buttons, gbc);
+
+        addEntropyListeners(changeMPWView);
+        changeMPWView.add(contents);
     }
 
     private void createMainView() throws IOException {
@@ -305,9 +436,9 @@ public class GUI {
         //gbc.fill = GridBagConstraints.HORIZONTAL;
 
         /* Master pass field. */
-        masterPassField = new JPasswordField(11);
-        masterPassField.getDocument().addDocumentListener(new TextListener(this, TEXT_FIELD_MASTER_PASS_ID));
-        contents.add(masterPassField, gbc);
+        MPW_FIELD_IN_MAIN_VIEW = new JPasswordField(11);
+        MPW_FIELD_IN_MAIN_VIEW.getDocument().addDocumentListener(new TextListener(this, TEXT_FIELD_MASTER_PASS_ID));
+        contents.add(MPW_FIELD_IN_MAIN_VIEW, gbc);
         gbc.gridx++;
 
         /* Set up clickable lock icon. */
@@ -349,7 +480,7 @@ public class GUI {
     public void textFieldChanged(int id) {
         switch (id) {
             case TEXT_FIELD_MASTER_PASS_ID:
-                if (locked && baoPass.decryptMasterKey(masterPassField.getText())) {
+                if (locked && baoPass.decryptMasterKey(MPW_FIELD_IN_MAIN_VIEW.getText())) {
                     openLock();
                 } else {
                     closeLock();
@@ -370,7 +501,7 @@ public class GUI {
     public void userClicked(int id) {
         switch (id) {
             case LOCK_ID:
-                masterPassField.setText("");
+                MPW_FIELD_IN_MAIN_VIEW.setText("");
                 closeLock();
                 break;
             case SITE_PASS_ID:
@@ -379,11 +510,9 @@ public class GUI {
             case BUTTON_NEW_MASTER_KEY_ID:
                 if (baoPass.generateMasterKey() != null) {
                     notificationText.setText("<html>Your random keyfile has been<br>" +
-                                                   "generated succesfully. It will<br>" +
-                                                   "be encrypted with your master<br>" +
-                                                   "password. Please choose a strong<br>" +
-                                                   "password and hide a paper copy<br>" +
-                                                   "of it at a safe place.");
+                                                   "generated succesfully. Next you<br>" +
+                                                   "will be asked to choose a master<br>" +
+                                                   "password to encrypt the keyfile.");
                     changeView(NOTIFICATION_VIEW_ID);
                     nextViewId = NEW_KEY_VIEW_ID;
                 }
@@ -397,19 +526,17 @@ public class GUI {
                 baoPass.setPreferenceRememberKey(!baoPass.getPreferenceRememberKey());
                 break;
             case BUTTON_ENCRYPT_ID:
-                char[] pw1 = createMPW1.getPassword();
-                char[] pw2 = createMPW2.getPassword();
+                char[] pw1 = MPW1_FIELD_IN_NEW_KEY_VIEW.getPassword();
+                char[] pw2 = MPW2_FIELD_IN_NEW_KEY_VIEW.getPassword();
                 if (!charArrayEquals(pw1, pw2)) {
                     System.out.println("not equals");
                     // TODO: complain
                 }
                 else if (baoPass.encryptMasterKey(pw1)) {
-                    notificationText.setText( "<html>Your keyfile has been saved<br>" +
-                                                    "as key1.txt. You should backup<br>" +
-                                                    "this file to another device now.<br>" +
-                                                    "Your passwords can not be reco-<br>" +
-                                                    "vered if you lose your keyfile or<br>" +
-                                                    "forget your master password.");
+                    notificationText.setText( "<html>Your keyfile has been encrypted<br>" +
+                                                    "succesfully and saved under filename<br>" +
+                                                    "key1.baopass<br>");
+                    System.out.println("Enrypted mpw with " + new String(pw1));
                     wipePasswordFields();
                     changeView(NOTIFICATION_VIEW_ID);
                     nextViewId = MAIN_VIEW_ID;
@@ -429,8 +556,30 @@ public class GUI {
                 closeLock();
                 changeView(FIRST_LAUNCH_VIEW_ID);
                 break;
+            case MENU_CHANGE_MPW_ID:
+                notificationText.setText("<html>Changing the master password<br>" +
+                                               "means your keyfile will be<br>" +
+                                               "encrypted with a new password.<br>" +
+                                               "Your site passwords won't change.<br>");
+                changeView(NOTIFICATION_VIEW_ID);
+                nextViewId = CHANGE_MPW_VIEW_ID;
+                break;
+            case BUTTON_CANCEL_MPW_CHANGE_ID:
+                wipePasswordFields();
+                changeView(MAIN_VIEW_ID);
+                break;
+            case BUTTON_PERFORM_MPW_CHANGE_ID:
+                //TODO: Check old pw, check new pws match, encrypt, file operations, verify.
+                wipePasswordFields();
+                changeView(MAIN_VIEW_ID);
+                break;
             case MENU_HIDE_SITE_PASS_ID:
-                //TODO: async ? menuHideSitePass.getState() ? save to preferences + actually hide site pass
+                //TODO: async ? save to preferences ?
+                try {
+                    generateSitePass();
+                } catch (Exception ex) {
+                    // TODO: ?
+                }
                 break;
             default:
                 break;
@@ -444,27 +593,48 @@ public class GUI {
         }
     };
 
-    private void closeLock() {
-        if (!locked) {
-            baoPass.forgetMasterKeyPlainText();
-            keywordField.setText("");
-            sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
-            locked = true;
-            lockIcon.setIcon(closedLockIcon);
-            lockIcon.setToolTipText(TOOLTIP_CLOSED_LOCK);
+    Runnable clearSitePassFromClipboard = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                String hashOfClipboardNow = getClipboardHash(null);
+                if (hashOfClipboardNow.equals(hashOfWhatWeSetClipboardTo)) {
+                    /* Don't clear the clipboard if it contains something else than site pass! */
+                    setClipboard("");
+                }
+            } catch (Exception ex) {
+                /* Do nothing if we failed to access or clear the clipboard. */
+            }
+        }
+    };
+
+    public String getClipboardHash(String clipboardContent) throws IOException, UnsupportedFlavorException {
+        if (clipboardContent == null) {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboardContent = (String) clipboard.getData(DataFlavor.stringFlavor);
+        }
+        char[] chars = clipboardContent.toCharArray();
+        return new String(PBKDF2.generateKey(chars, 1, 64).getEncoded());
+    }
+
+    public void setClipboard(String input) {
+        StringSelection inputSelection = new StringSelection(input);
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(inputSelection, null);
+        try {
+            hashOfWhatWeSetClipboardTo = getClipboardHash(input);
+        } catch (Exception ex) {
+            /* This never happens and if it does, it only affects our ability to clear the clipboard. */
         }
     }
 
-    private void openLock() {
-        if (locked) {
-            locked = false;
-            lockIcon.setIcon(openLockIcon);
-            lockIcon.setToolTipText(TOOLTIP_OPEN_LOCK);
+    private void copySitePassToClipboard() {
+        try {
+            char[] sitePassChars = baoPass.generateSitePass(keywordField.getText().toCharArray());
+            setClipboard(new String(sitePassChars));
+            scheduler.schedule(clearSitePassFromClipboard, SECONDS_TO_KEEP_SITE_PASS_IN_CLIPBOARD, TimeUnit.SECONDS);
+        } catch (Exception ex) {
+            // TODO: error accessing clipboard (or generating site pass)
         }
-    }
-
-    private void sitePassClicked() {
-        sitePass.setText("Copied");
     }
 
     public void generateSitePass() throws Exception {
@@ -473,11 +643,15 @@ public class GUI {
             sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
         } else {
             char[] pass = baoPass.generateSitePass(kw.toCharArray());
+            if (menuHideSitePass.getState()) {
+                Arrays.fill(pass, '*');
+            }
             sitePass.setText(new String(pass));
         }
     }
 
     public void repaint() {
+        System.out.println("REPAINT WAS CALLED");
         mainView.repaint();
     }
 
@@ -486,20 +660,23 @@ public class GUI {
     }
 
     public void wipePasswordFields() {
-        createMPW1.setText("");
-        createMPW2.setText("");
-        masterPassField.setText("");
-        wipe(createMPW1.getPassword());
-        wipe(createMPW2.getPassword());
-        wipe(masterPassField.getPassword());
+        MPW1_FIELD_IN_NEW_KEY_VIEW.setText("");
+        MPW2_FIELD_IN_NEW_KEY_VIEW.setText("");
+        MPW1_FIELD_IN_CHANGE_MPW_VIEW.setText("");
+        MPW2_FIELD_IN_CHANGE_MPW_VIEW.setText("");
+        MPW_FIELD_IN_MAIN_VIEW.setText("");
+        MPW_OLD_FIELD_IN_CHANGE_MPW_VIEW.setText("");
     }
 
     private void changeView(String viewId) {
-        menuSwitchKey.setEnabled(viewId.equals(FIRST_LAUNCH_VIEW_ID) ? false : true);
         aboutMenu.setEnabled(viewId.equals(NOTIFICATION_VIEW_ID) ? false : true);
         if (viewId.equals(FIRST_LAUNCH_VIEW_ID)) {
             wipePasswordFields();
         }
+        boolean ifMainView = (viewId.equals(MAIN_VIEW_ID));
+        menuSwitchKey.setEnabled(ifMainView);
+        menuChangeMPW.setEnabled(ifMainView);
+
         nextViewId = currentViewId; /* Default assumption, sometimes overriden after calling this. */
         currentViewId = viewId;
         cardLayout.show(viewHolder, viewId);
