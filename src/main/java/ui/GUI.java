@@ -88,12 +88,6 @@ public class GUI {
         view.addKeyListener(inputEntropyListener);
     }
 
-    public void notifyUser(String text) {
-        View notificationView = viewMapper.get(NotificationView.id);
-        notificationView.performAction(text);
-        changeView(notificationView);
-    }
-
     private void createMenu() {
         View notificationView = viewMapper.get(NotificationView.id);
         MainView mainView = (MainView) viewMapper.get(MainView.id);
@@ -112,6 +106,12 @@ public class GUI {
         ClickListener clickListener = new ClickListener(view, text);
         button.addMouseListener(clickListener);
         return button;
+    }
+
+    public void notifyUser(String text) {
+        View notificationView = viewMapper.get(NotificationView.id);
+        notificationView.performAction(text);
+        changeView(notificationView);
     }
 
     public void nextView() {

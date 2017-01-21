@@ -34,16 +34,10 @@ public class BaoPass {
     private char[] masterKeyPlainText;
     private boolean preferenceRememberKey;
 
-    public BaoPass(EntropyCollector entropyCollector) {
+    public BaoPass(EntropyCollector entropyCollector) throws Exception {
         this.entropyCollector = entropyCollector;
-    }
-
-    public void run() throws Exception {
         Utils.hackCryptographyExportRestrictions();
         preferenceRememberKey = true; //TODO: load from config file
-        File keyFile = new File("defaultKeyFile.txt");
-        String initialView = (loadEncryptedMasterKey(keyFile) ? MainView.id : FirstLaunchView.id);
-        GUI gui = new GUI(this, entropyCollector, initialView);
     }
 
     public boolean encryptMasterKey(char[] passwordForEncryption) {
@@ -78,6 +72,11 @@ public class BaoPass {
         char[] combined = combine(masterKeyPlainText, keyword, false);
         SecretKey siteKey = PBKDF2.generateKey(combined, SITE_PASS_ITERATIONS, SITE_PASS_BYTES);
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
+    }
+
+    public boolean loadEncryptedMasterKey() {
+        File keyFile = new File("defaultKeyFile.txt"); //TODO: load from config file
+        return loadEncryptedMasterKey(keyFile);
     }
 
     public boolean loadEncryptedMasterKey(File file) {

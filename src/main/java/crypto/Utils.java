@@ -120,21 +120,25 @@ public class Utils {
      *  caught and the user should be directed to install a Cryptographic
      *  Policy Extension pack from Oracle. Source for this hack:
      *  http://stackoverflow.com/a/21148472/4490400 */
-    public static void hackCryptographyExportRestrictions() throws Exception {
-        Field gate = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-        gate.setAccessible(true);
-        gate.setBoolean(null, false);
-        Field allPerm = Class.forName("javax.crypto.CryptoAllPermission").getDeclaredField("INSTANCE");
-        allPerm.setAccessible(true);
-        Object accessAllAreasCard = allPerm.get(null);
-        final Constructor<?> constructor = Class.forName("javax.crypto.CryptoPermissions").getDeclaredConstructor();
-        constructor.setAccessible(true);
-        Object coll = constructor.newInstance();
-        Method addPerm = Class.forName("javax.crypto.CryptoPermissions").getDeclaredMethod("add", java.security.Permission.class);
-        addPerm.setAccessible(true);
-        addPerm.invoke(coll, accessAllAreasCard);
-        Field defaultPolicy = Class.forName("javax.crypto.JceSecurity").getDeclaredField("defaultPolicy");
-        defaultPolicy.setAccessible(true);
-        defaultPolicy.set(null, coll);
+    public static void hackCryptographyExportRestrictions() {
+        try {
+            Field gate = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
+            gate.setAccessible(true);
+            gate.setBoolean(null, false);
+            Field allPerm = Class.forName("javax.crypto.CryptoAllPermission").getDeclaredField("INSTANCE");
+            allPerm.setAccessible(true);
+            Object accessAllAreasCard = allPerm.get(null);
+            final Constructor<?> constructor = Class.forName("javax.crypto.CryptoPermissions").getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Object coll = constructor.newInstance();
+            Method addPerm = Class.forName("javax.crypto.CryptoPermissions").getDeclaredMethod("add", java.security.Permission.class);
+            addPerm.setAccessible(true);
+            addPerm.invoke(coll, accessAllAreasCard);
+            Field defaultPolicy = Class.forName("javax.crypto.JceSecurity").getDeclaredField("defaultPolicy");
+            defaultPolicy.setAccessible(true);
+            defaultPolicy.set(null, coll);
+        } catch (Exception ex) {
+            /* Do nothing if hack failed. If we run into cryptography export restrictions, we'll find out. */
+        }
     }
 }

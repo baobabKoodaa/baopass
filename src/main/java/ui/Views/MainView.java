@@ -20,8 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static crypto.Utils.wipe;
-
 public class MainView extends View {
 
     public static final String id = "MAIN_VIEW";
@@ -58,7 +56,7 @@ public class MainView extends View {
 
     private String hashOfWhatWeSetClipboardTo;
 
-    public MainView(GUI gui, BaoPass baoPass) throws IOException { // TODO: Gracefully fail icon load exceptions.
+    public MainView(GUI gui, BaoPass baoPass) throws IOException {
         super(); /* Initialize inherited JPanel. */
         this.gui = gui;
         this.baoPass = baoPass;
@@ -98,6 +96,7 @@ public class MainView extends View {
         gbc.gridx++;
 
         /* Set up clickable lock icon. */
+        // TODO: Gracefully fail icon load exceptions.
         String path = "lock-closed-25.png";
         closedLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
         path = "lock-open-25.png";
@@ -119,8 +118,8 @@ public class MainView extends View {
 
         sitePass = new JLabel(TEXT_WHEN_NO_SITE_PASS);
         sitePass.setToolTipText(TOOLTIP_SITE_PASS);
-        sitePass.setFont(new Font("Monospaced", Font.PLAIN, 16));
-        sitePass.setVerticalAlignment(JLabel.CENTER);
+        sitePass.setFont(new Font("Consolas", Font.PLAIN, 18)); //TODO: Fallback plan
+        sitePass.setVerticalAlignment(JLabel.BOTTOM);
         sitePass.addMouseListener(new ClickListener(this, SITE_PASS_ID));
         contents.add(sitePass, gbc);
 
@@ -200,13 +199,11 @@ public class MainView extends View {
         }
     }
 
-    /** Also called when user types char into MPW and decryption fails.
-     *  In that scenario we don't want to wipe the MPW field. */
     public void closeLock(boolean clearMPW, boolean clearKW) {
+        baoPass.forgetMasterKeyPlainText();
+        if (clearMPW) MPW.setText("");
+        if (clearKW) keywordField.setText("");
         if (!locked) {
-            if (clearMPW) MPW.setText("");
-            if (clearKW) keywordField.setText("");
-            baoPass.forgetMasterKeyPlainText();
             sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
             locked = true;
             lockIcon.setIcon(closedLockIcon);
@@ -222,15 +219,15 @@ public class MainView extends View {
     /** When user inserts a character to MPW field, try to decrypt. */
     private void MPWfieldChanged() {
         char[] mpw = MPW.getPassword();
-        if (!baoPass.decryptMasterKey(mpw)) {
+        if (baoPass.decryptMasterKey(mpw)) {
+            openLock();
+            if (!keywordField.getText().isEmpty()) {
+                /* If keyword field is not empty, generate site pass as well. */
+                KWfieldChanged();
+            }
+        } else {
             /* We try to decrypt on every keystroke, so don't report error. */
             closeLock(false, false);
-            return;
-        }
-        openLock();
-        if (!keywordField.getText().isEmpty()) {
-            /* If keyword field is not empty, generate site pass as well. */
-            KWfieldChanged();
         }
     }
 
