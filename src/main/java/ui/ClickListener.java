@@ -1,5 +1,7 @@
 package ui;
 
+import ui.Views.View;
+
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import java.awt.event.ActionEvent;
@@ -8,31 +10,24 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 /** Separate instance of ClickListener for each clickable object. */
-public class ClickListener implements MouseListener, ActionListener, MenuListener {
+public class ClickListener implements MouseListener, ActionListener {
 
-    GUI gui;
-    int id;
+    View view;
+    String id;
 
-    public ClickListener(GUI gui, int id) {
-        this.gui = gui;
+    public ClickListener(View view, String id) {
+        this.view = view;
         this.id = id;
     }
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        gui.userClicked(id);
+        view.performAction(id);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        /* For checkboxes and menu items, etc. */
-        gui.userClicked(id);
-    }
-
-    @Override
-    public void menuSelected(MenuEvent e) {
-        System.out.println(e.toString());
-        gui.userClicked(id);
+        view.performAction(id);
     }
 
     @Override
@@ -52,16 +47,6 @@ public class ClickListener implements MouseListener, ActionListener, MenuListene
 
     @Override
     public void mouseExited(MouseEvent e) {
-
-    }
-
-    @Override
-    public void menuDeselected(MenuEvent e) {
-
-    }
-
-    @Override
-    public void menuCanceled(MenuEvent e) {
 
     }
 }

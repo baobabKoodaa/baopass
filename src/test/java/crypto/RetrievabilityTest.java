@@ -30,7 +30,7 @@ public class RetrievabilityTest {
             char[] masterPassChars = new String(masterPassBytes).toCharArray();
             EncryptedMessage enc = AES.encrypt(masterKeyBytes, masterPassChars);
             baoPass.setMasterKeyEncrypted(enc);
-            baoPass.decryptMasterKey(new String(masterPassChars));
+            baoPass.decryptMasterKey(masterPassChars);
             int end = originalMasterKeyChars.length;
             char[] returnedChars = baoPass.getMasterKeyPlainText();
 

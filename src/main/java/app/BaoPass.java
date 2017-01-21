@@ -2,6 +2,8 @@ package app;
 
 import crypto.*;
 import ui.GUI;
+import ui.Views.FirstLaunchView;
+import ui.Views.MainView;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
@@ -40,7 +42,7 @@ public class BaoPass {
         Utils.hackCryptographyExportRestrictions();
         preferenceRememberKey = true; //TODO: load from config file
         File keyFile = new File("defaultKeyFile.txt");
-        String initialView = (loadEncryptedMasterKey(keyFile) ? GUI.MAIN_VIEW_ID : GUI.FIRST_LAUNCH_VIEW_ID);
+        String initialView = (loadEncryptedMasterKey(keyFile) ? MainView.id : FirstLaunchView.id);
         GUI gui = new GUI(this, entropyCollector, initialView);
     }
 
@@ -90,9 +92,9 @@ public class BaoPass {
         }
     }
 
-    public boolean decryptMasterKey(String masterPassword) {
+    public boolean decryptMasterKey(char[] masterPassword) {
         try {
-            masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, masterPassword.toCharArray())).toCharArray();
+            masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, masterPassword)).toCharArray();
             return true;
         } catch (InvalidKeyException ex) {
             System.err.println(CRYPTO_EXPORT_RESTRICTIONS_ERROR);
@@ -100,7 +102,7 @@ public class BaoPass {
             /* Most likely invalid password. Don't report error, we try to decrypt on every keystroke. */
         } catch (Exception ex) {
             /* Other unknown errors. */
-            System.err.println(ex.toString());
+            System.err.println(ex.toString()); //TODO
         }
         return false;
     }
@@ -116,6 +118,10 @@ public class BaoPass {
 
     public char[] getMasterKeyPlainText() {
         return this.masterKeyPlainText;
+    }
+
+    public void flipPreferenceRememberKey() {
+        setPreferenceRememberKey(!getPreferenceRememberKey());
     }
 
     public boolean getPreferenceRememberKey() {
