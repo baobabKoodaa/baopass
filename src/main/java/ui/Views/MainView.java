@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import app.Main;
 import crypto.PBKDF2;
 import ui.ClickListener;
@@ -22,14 +22,17 @@ import java.util.concurrent.TimeUnit;
 
 public class MainView extends View {
 
+    /** Id for this View. */
     public static final String id = "MAIN_VIEW";
+
+    /* Ids for various elements inside this View. */
     public static final String MPW_FIELD_ID = "MPW";
     public static final String KW_FIELD_ID = "KW";
     public static final String LOCK_ID = "LOCK";
     public static final String SITE_PASS_ID = "SITE_PASS";
 
     /* Static texts displayed to user. */
-    public static final String TEXT_WHEN_NO_SITE_PASS = " "; // layout breaks if space is removed
+    public static final String TEXT_WHEN_NO_SITE_PASS = " "; /* layout breaks if space is removed */
     public static final String TOOLTIP_OPEN_LOCK = "Click here to lock down.";
     public static final String TOOLTIP_CLOSED_LOCK = "Please insert master password to decrypt keyfile.";
     public static final String TOOLTIP_SITE_PASS = "Click here to copy site pass to clipboard.";
@@ -42,7 +45,7 @@ public class MainView extends View {
 
     /* Dependencies. */
     GUI gui;
-    BaoPass baoPass;
+    BaoPassCore baoPassCore;
 
     /* Properties. */
     JPasswordField MPW;
@@ -56,10 +59,9 @@ public class MainView extends View {
 
     private String hashOfWhatWeSetClipboardTo;
 
-    public MainView(GUI gui, BaoPass baoPass) throws IOException {
-        super(); /* Initialize inherited JPanel. */
+    public MainView(GUI gui, BaoPassCore baoPassCore) throws IOException {
         this.gui = gui;
-        this.baoPass = baoPass;
+        this.baoPassCore = baoPassCore;
 
         setLayout(new GridBagLayout());
         JPanel contents = new JPanel(new GridBagLayout());
@@ -96,29 +98,34 @@ public class MainView extends View {
         gbc.gridx++;
 
         /* Set up clickable lock icon. */
-        // TODO: Gracefully fail icon load exceptions.
-        String path = "lock-closed-25.png";
-        closedLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
-        path = "lock-open-25.png";
-        openLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
-        lockIcon = new JLabel(closedLockIcon);
+        lockIcon = new JLabel();
         locked = true;
-        lockIcon.addMouseListener(new ClickListener(this, LOCK_ID));
-        lockIcon.setVerticalAlignment(JLabel.TOP);
+        try {
+            String path = "lock-closed-25.png";
+            closedLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
+            path = "lock-open-25.png";
+            openLockIcon = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResourceAsStream(path)));
+            lockIcon.setIcon(closedLockIcon);
+            lockIcon.addMouseListener(new ClickListener(this, LOCK_ID));
+            lockIcon.setVerticalAlignment(JLabel.TOP);
+        } catch (Exception ex) {
+            /* Fail gracefully and simply don't show the lock icon. */
+        }
         contents.add(lockIcon, gbc);
         gbc.gridy++;
         gbc.gridx--;
 
         /* Keyword field. */
-        keywordField = new JTextField(11);
         //TODO: remember chosen keywords. https://docs.oracle.com/javase/tutorial/uiswing/components/combobox.html
+        keywordField = new JTextField(11);
         contents.add(keywordField, gbc);
         gbc.gridy++;
         gbc.gridy++;
 
+        /* Generated site password. */
         sitePass = new JLabel(TEXT_WHEN_NO_SITE_PASS);
         sitePass.setToolTipText(TOOLTIP_SITE_PASS);
-        sitePass.setFont(new Font("Consolas", Font.PLAIN, 18)); //TODO: Fallback plan
+        sitePass.setFont(gui.monospaceFont);
         sitePass.setVerticalAlignment(JLabel.BOTTOM);
         sitePass.addMouseListener(new ClickListener(this, SITE_PASS_ID));
         contents.add(sitePass, gbc);
@@ -136,11 +143,11 @@ public class MainView extends View {
 
     private void copySitePassToClipboard() {
         try {
-            char[] sitePassChars = baoPass.generateSitePass(keywordField.getText().toCharArray());
+            char[] sitePassChars = baoPassCore.generateSitePass(keywordField.getText().toCharArray());
             setClipboard(new String(sitePassChars));
             scheduler.schedule(clearSitePassFromClipboard, SECONDS_TO_KEEP_SITE_PASS_IN_CLIPBOARD, TimeUnit.SECONDS);
         } catch (Exception ex) {
-            // TODO: error accessing clipboard (or generating site pass)
+            gui.popupError("Internal failure! Clipboard probably does not contain your password right now.");
         }
     }
 
@@ -148,7 +155,7 @@ public class MainView extends View {
         @Override
         public void run() {
             try {
-                String hashOfClipboardNow = getClipboardHash(null);
+                String hashOfClipboardNow = getClipboardHash();
                 if (hashOfClipboardNow.equals(hashOfWhatWeSetClipboardTo)) {
                     /* Don't clear the clipboard if it contains something else than site pass! */
                     setClipboard("");
@@ -159,11 +166,12 @@ public class MainView extends View {
         }
     };
 
-    public String getClipboardHash(String clipboardContent) throws IOException, UnsupportedFlavorException {
-        if (clipboardContent == null) {
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboardContent = (String) clipboard.getData(DataFlavor.stringFlavor);
-        }
+    public String getClipboardHash() throws IOException, UnsupportedFlavorException {
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        String clipboardContent = (String) clipboard.getData(DataFlavor.stringFlavor);
+        return getHash(clipboardContent);
+    }
+    public String getHash(String clipboardContent) throws IOException, UnsupportedFlavorException {
         char[] chars = clipboardContent.toCharArray();
         return new String(PBKDF2.generateKey(chars, 1, 64).getEncoded());
     }
@@ -172,9 +180,9 @@ public class MainView extends View {
         StringSelection inputSelection = new StringSelection(input);
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(inputSelection, null);
         try {
-            hashOfWhatWeSetClipboardTo = getClipboardHash(input);
+            hashOfWhatWeSetClipboardTo = getHash(input);
         } catch (Exception ex) {
-            /* This never happens and if it does, it only affects our ability to clear the clipboard. */
+            /* This never happens and if it does, it only affects our ability to clear the clipboard later. */
         }
     }
 
@@ -183,7 +191,7 @@ public class MainView extends View {
         if (kw.isEmpty()) {
             sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
         } else {
-            char[] pass = baoPass.generateSitePass(kw.toCharArray());
+            char[] pass = baoPassCore.generateSitePass(kw.toCharArray());
             if (gui.menu.hideSitePass.getState()) {
                 Arrays.fill(pass, '*');
             }
@@ -200,7 +208,7 @@ public class MainView extends View {
     }
 
     public void closeLock(boolean clearMPW, boolean clearKW) {
-        baoPass.forgetMasterKeyPlainText();
+        baoPassCore.forgetMasterKeyPlainText();
         if (clearMPW) MPW.setText("");
         if (clearKW) keywordField.setText("");
         if (!locked) {
@@ -219,7 +227,7 @@ public class MainView extends View {
     /** When user inserts a character to MPW field, try to decrypt. */
     private void MPWfieldChanged() {
         char[] mpw = MPW.getPassword();
-        if (baoPass.decryptMasterKey(mpw)) {
+        if (baoPassCore.decryptMasterKey(mpw)) {
             openLock();
             if (!keywordField.getText().isEmpty()) {
                 /* If keyword field is not empty, generate site pass as well. */
@@ -236,8 +244,9 @@ public class MainView extends View {
         try {
             generateSitePass();
         } catch (Exception ex) {
-            /* Probably incorrect master password. TODO */
-            System.err.println("Error generating site pass: " + ex.toString());
+            /* Probably incorrect master password. Don't report error, because
+            *  some users may prefer to write keyword before master pass. */
+            sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
         }
     }
 

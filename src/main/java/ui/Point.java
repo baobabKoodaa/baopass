@@ -1,6 +1,8 @@
 package ui;
 
+/** Holds mouse coordinates (to collect entropy from mouse movements). */
 public class Point {
+
     public int y;
     public int x;
 

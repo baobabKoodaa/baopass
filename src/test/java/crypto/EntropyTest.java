@@ -1,6 +1,6 @@
 package crypto;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import org.junit.jupiter.api.Test;
 
 import java.io.UnsupportedEncodingException;
@@ -15,7 +15,6 @@ public class EntropyTest {
 
     public static final int MASTER_KEY_LEN = 64;
     public static final int SITE_PASS_LEN = 12;
-
 
     /** Expect success from master key entropy test with a simulated EntropyCollector. */
     @Test
@@ -52,7 +51,7 @@ public class EntropyTest {
      *  @param brokenEntropyCollector determines if we simulate a functional or broken entropy collector. */
     private boolean masterKeyLooksRandom(boolean brokenEntropyCollector) throws Exception {
         EntropyCollectorStub simulatedEntropyCollector = new EntropyCollectorStub();
-        BaoPass baoPass = new BaoPass(simulatedEntropyCollector);
+        BaoPassCore baoPassCore = new BaoPassCore(simulatedEntropyCollector);
         HashSet<String> seenKeys = new HashSet<>();
         int[][] charCountsPos = new int[MASTER_KEY_LEN][500];
         int[] charCounts = new int[500];
@@ -61,7 +60,7 @@ public class EntropyTest {
                 /* If value is not incremented, entropyCollector produces same output every time. */
                 simulatedEntropyCollector.i++;
             }
-            char[] mkey = baoPass.generateMasterKey();
+            char[] mkey = baoPassCore.generateMasterKey();
             boolean keyNotSeenBefore = seenKeys.add(new String(mkey));
             /* Even if we simulate a broken entropy collector, we do not expect to see
             *  collisions, because part of the master key is made with SecureRandom. */
@@ -96,16 +95,16 @@ public class EntropyTest {
     }
 
     public void sitePassEntropyTest(String prefix) throws Exception {
-        BaoPass baoPass = new BaoPass(new EntropyCollector());
+        BaoPassCore baoPassCore = new BaoPassCore(new EntropyCollector());
         HashSet<String> outputs = new HashSet<>();
         int[][] charCountsPos = new int[SITE_PASS_LEN][500];
         int[] charCounts = new int[500];
         for (int i=0; i<100; i++) {
             char[] mkey = (prefix + i).toCharArray();
-            baoPass.setMasterKeyPlainText(mkey);
+            baoPassCore.setMasterKeyPlainText(mkey);
             for (int j=0; j<100; j++) {
                 char[] keyword = ("Similar keywords " + j).toCharArray();
-                char[] sitePass = baoPass.generateSitePass(keyword);
+                char[] sitePass = baoPassCore.generateSitePass(keyword);
                 boolean passNotSeenBefore = outputs.add(new String(sitePass));
                 assertEquals(SITE_PASS_LEN, sitePass.length);
                 assertTrue(passNotSeenBefore, "Site pass collision detected!");

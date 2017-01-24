@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import ui.GUI;
 
 import javax.swing.*;
@@ -11,15 +11,14 @@ public class NotificationView extends View {
     public static final String id = "NOTIFICATION_VIEW";
 
     GUI gui;
-    BaoPass baoPass;
+    BaoPassCore baoPassCore;
 
     private JLabel notificationText;
     private JButton buttonOkNotification;
 
-    public NotificationView(GUI gui, BaoPass baoPass) {
-        super(); /* Initialize inherited JPanel. */
+    public NotificationView(GUI gui, BaoPassCore baoPassCore) {
         this.gui = gui;
-        this.baoPass = baoPass;
+        this.baoPassCore = baoPassCore;
 
         setLayout(new GridBagLayout());
         JPanel inc2 = new JPanel(new BorderLayout());

@@ -2,20 +2,26 @@ package app;
 
 import crypto.*;
 import ui.GUI;
-import ui.Views.FirstLaunchView;
-import ui.Views.MainView;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.SecretKey;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static crypto.Utils.*;
 
-public class BaoPass {
+/** Core contains state and convenience methods for key/pass generation, encryption, etc. */
+public class BaoPassCore {
 
     /* Few iterations for site pass is ok, because master key has high entropy. */
     private static final int SITE_PASS_ITERATIONS = 276;
@@ -29,15 +35,54 @@ public class BaoPass {
     *  Otherwise the last characters in the generated pass will have lower entropy. */
     private static final int SITE_PASS_BYTES = 9;
 
+    /* Dependencies. */
     private EntropyCollector entropyCollector;
+    private GUI gui;
+
+    /* Properties. */
     private EncryptedMessage masterKeyEncrypted;
     private char[] masterKeyPlainText;
     private boolean preferenceRememberKey;
+    private boolean preferenceHideSitePass;
 
-    public BaoPass(EntropyCollector entropyCollector) throws Exception {
+    public BaoPassCore(EntropyCollector entropyCollector) throws Exception {
         this.entropyCollector = entropyCollector;
         Utils.hackCryptographyExportRestrictions();
-        preferenceRememberKey = true; //TODO: load from config file
+        loadPreferencesFromConfigFile();
+    }
+
+    private void loadPreferencesFromConfigFile() throws FileNotFoundException {
+        File configFile = getOrCreateConfigFile();
+        Map<String, String> config = Utils.getMapFromFile(configFile);
+        preferenceRememberKey = Boolean.parseBoolean(config.get("preferenceRememberKey"));
+        preferenceHideSitePass = Boolean.parseBoolean(config.get("preferenceHideSitePass"));
+        loadEncryptedMasterKey(config.get("activeKey"));
+    }
+
+    private File getOrCreateConfigFile() {
+        File configDir = new File(System.getProperty("user.dir") + File.separator + "baoData");
+        if (configDir.exists() && !configDir.isDirectory()) {
+            throw new RuntimeException("Unable to create config dir, because a file has reserved name baoData");
+        }
+        if (!configDir.exists()) {
+            configDir.mkdirs();
+        }
+        File configFile = new File(configDir.getAbsolutePath() + File.separator + "baoConfig.txt");
+        if (configFile.exists() && configFile.isDirectory()) {
+            throw new RuntimeException("Unable to create config file, because a directory has reserved name baoConfig.txt");
+        }
+        if (!configFile.exists()) {
+            List<String> out = new ArrayList<>();
+            out.add("activeKey:");
+            out.add("preferenceRememberKey:true");
+            out.add("preferenceHideSitePass:false");
+            try {
+                Files.write(Paths.get(configFile.getAbsolutePath()), out, Charset.forName("UTF-8"));
+            } catch (Exception ex) {
+                throw new RuntimeException("Unable to save config file to disk!");
+            }
+        }
+        return configFile;
     }
 
     public boolean encryptMasterKey(char[] passwordForEncryption) {
@@ -48,9 +93,9 @@ public class BaoPass {
             * TODO: if preferenceRememberKey then remember file. */
             return true;
         } catch (InvalidKeyException ex) {
-            System.err.println(CRYPTO_EXPORT_RESTRICTIONS_ERROR);
+            gui.popupError(CRYPTO_EXPORT_RESTRICTIONS_ERROR);
         } catch (Exception ex) {
-            System.err.println("Internal failure! " + ex.toString());
+            gui.popupError("Internal failure! " + ex.toString());
         }
         return false;
     }
@@ -63,7 +108,7 @@ public class BaoPass {
             masterKeyPlainText = getUrlSafeCharsFromBytes(masterKey);
             return masterKeyPlainText;
         } catch (UnsupportedEncodingException|NoSuchAlgorithmException ex) {
-            System.err.println(ex.toString());
+            gui.popupError("Internal failure! " + ex.toString());
             return null;
         }
     }
@@ -74,19 +119,30 @@ public class BaoPass {
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 
-    public boolean loadEncryptedMasterKey() {
-        File keyFile = new File("defaultKeyFile.txt"); //TODO: load from config file
-        return loadEncryptedMasterKey(keyFile);
+    public boolean hasActiveKeyfile() {
+        return masterKeyEncrypted != null;
+    }
+
+    public boolean loadEncryptedMasterKey(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return false;
+        }
+        File configDir = new File(System.getProperty("user.dir") + File.separator + "baoData");
+        File file = new File(configDir.getAbsolutePath() + File.separator + fileName);
+        return loadEncryptedMasterKey(file);
     }
 
     public boolean loadEncryptedMasterKey(File file) {
         try {
             masterKeyEncrypted = new EncryptedMessage(file);
             if (preferenceRememberKey) {
-                /* TODO: remember selected file */
+                // TODO update active key file to mem
+                // update active key to config file
             }
             return true;
         } catch (Exception ex) {
+            /* TODO */
+            masterKeyEncrypted = null;
             return false;
         }
     }
@@ -137,5 +193,13 @@ public class BaoPass {
 
     public void setMasterKeyEncrypted(EncryptedMessage masterKeyEncrypted) {
         this.masterKeyEncrypted = masterKeyEncrypted;
+    }
+
+    public boolean getPreferenceHideSitePass() {
+        return preferenceHideSitePass;
+    }
+
+    public void setGui(GUI gui) {
+        this.gui = gui;
     }
 }

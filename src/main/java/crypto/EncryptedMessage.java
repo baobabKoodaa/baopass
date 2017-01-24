@@ -2,6 +2,7 @@ package crypto;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,7 +36,7 @@ public class EncryptedMessage {
 
     /** Constructor for loading an old master key from file. */
     public EncryptedMessage(File sourceFile) throws FileNotFoundException {
-        HashMap<String, String> map = getMapFromFile(sourceFile);
+        Map<String, String> map = Utils.getMapFromFile(sourceFile);
         this.cipherText = Utils.getBytesFromUrlSafeChars(map.get("cipherText").toCharArray());
         this.salt = Utils.getBytesFromUrlSafeChars(map.get("salt").toCharArray());
         this.iv = Utils.getBytesFromUrlSafeChars(map.get("iv").toCharArray());
@@ -43,25 +44,13 @@ public class EncryptedMessage {
         this.keyLengthPBKDF2 = Integer.parseInt(map.get("AESkeyLen")) / 8;
     }
 
-    private HashMap<String, String> getMapFromFile(File file) throws FileNotFoundException {
-        Scanner scanner = new Scanner(file, "UTF-8");
-        HashMap<String, String> map = new HashMap<>();
-        scanner.nextLine(); // first line is general info.
-        while (scanner.hasNext()){
-            String[] line = scanner.nextLine().split(":", 2);
-            String key = line[0];
-            String val = line[1];
-            map.put(key, val);
-        }
-        scanner.close();
-        return map;
-    }
-
     /** Save this encrypted master key to file. */
     public void saveToFile(String filepath) throws IOException {
-        if (new File(filepath).exists()) {
-            //throw new FileAlreadyExistsException("File already exists! " + file.toString());
+        File file = new File(filepath);
+        if (file.exists()) {
+            throw new FileAlreadyExistsException("File already exists! " + file.toString());
         }
+        file.getParentFile().mkdirs();
         List<String> output = new ArrayList<>();
         output.add("Master key encrypted with AES/GCM/NoPadding, saved in Base64URLSafe encoding.");
         output.add("bitsOfEntropy:384"); /* Just for convenience. */
@@ -70,8 +59,7 @@ public class EncryptedMessage {
         output.add("iv:" + new String(Utils.getUrlSafeCharsFromBytes(iv)));
         output.add("PBKDF2iterationsForAESkey:" + iterationsPBKDF2);
         output.add("AESkeyLen:" + keyLengthPBKDF2 * 8);
-        Path file = Paths.get(filepath);
-        Files.write(file, output, Charset.forName("UTF-8"));
+        Files.write(Paths.get(filepath), output, Charset.forName("UTF-8"));
     }
 
     public byte[] getCipherText() {

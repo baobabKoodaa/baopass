@@ -12,10 +12,6 @@ import java.awt.event.ActionListener;
 /** The top side MenuContainer with options etc. */
 public class MenuContainer extends JMenuBar {
 
-    GUI gui;
-    View notificationView;
-    MainView mainView;
-
     public static final String ABOUT_ID = "ABOUT";
 
     public static final String SWITCH_ACTIVE_KEYFILE = "Switch active keyfile";
@@ -29,6 +25,11 @@ public class MenuContainer extends JMenuBar {
     public JCheckBoxMenuItem hideSitePass;
     /* About */
     public JMenu aboutMenu;
+
+    /* Dependencies. */
+    GUI gui;
+    View notificationView;
+    MainView mainView;
 
     public MenuContainer(GUI gui, View notificationView, MainView mainView) {
         super();

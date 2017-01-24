@@ -1,1 +1,1 @@
-# main.baopass.app.BaoPass
+# main.baopass.app.BaoPassCore

@@ -2,15 +2,16 @@ package ui;
 
 import app.Main;
 import crypto.EntropyCollector;
-import app.BaoPass;
-import crypto.Utils;
+import app.BaoPassCore;
 import ui.Views.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class GUI {
@@ -25,35 +26,56 @@ public class GUI {
     private CardLayout cardLayout;
     private Dimension dimension;
     public Font regularFont;
+    public Font monospaceFont;
 
-    public BaoPass baoPass;
+    public BaoPassCore baoPassCore;
     EntropyCollector entropyCollector;
     EntropyListener inputEntropyListener;
 
     public MenuContainer menu;
 
-    public GUI(BaoPass baoPass, EntropyCollector entropyCollector, String initialViewId) throws Exception {
-        this.baoPass = baoPass;
+    public GUI(BaoPassCore baoPassCore, EntropyCollector entropyCollector, String initialViewId) throws Exception {
+        this.baoPassCore = baoPassCore;
         this.entropyCollector = entropyCollector;
         this.inputEntropyListener = new EntropyListener(entropyCollector);
+        initFonts();
         initFrame();
 
         /* Create GUI contents */
-        setUpView(new MainView        (this, baoPass));
-        setUpView(new FirstLaunchView (this, baoPass));
-        setUpView(new NewKeyView      (this, baoPass));
-        setUpView(new ChangeMPWView   (this, baoPass));
-        setUpView(new NotificationView(this, baoPass));
+        setUpView(new MainView        (this, baoPassCore));
+        setUpView(new FirstLaunchView (this, baoPassCore));
+        setUpView(new NewKeyView      (this, baoPassCore));
+        setUpView(new ChangeMPWView   (this, baoPassCore));
+        setUpView(new NotificationView(this, baoPassCore));
         createMenu();
 
         packFrame(initialViewId);
+    }
+
+    private void initFonts() {
+        loadFontFromFile("tahoma.ttf");
+        loadFontFromFile("SourceCodePro-Medium.ttf");
+        regularFont = new Font("Tahoma", Font.PLAIN, 12);
+        monospaceFont = new Font("Source Code Pro Medium", Font.TRUETYPE_FONT, 16);
+    }
+
+    private void loadFontFromFile(String fontPath) {
+        try {
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            InputStream is = Main.class.getClassLoader().getResourceAsStream(fontPath);
+            ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, is));
+            System.out.println(ge.getAvailableFontFamilyNames().length);
+        } catch (Exception ex) {
+            /* If we fail at loading a font from file, the user may
+             * have the font installed anyway. If they don't, we
+             * silently fallback to system's default font. */
+        }
     }
 
     /** Actions to take at the beginning of constructing the GUI. */
     private void initFrame() {
         entropyCollector.collect(System.nanoTime());
         dimension = new Dimension(300, 145);
-        regularFont = new Font("Tahoma", Font.PLAIN, 12);
         frame = new JFrame("BaoPass");
         loadAppIcon();
         cardLayoutViewHolder = new JPanel();
@@ -111,7 +133,7 @@ public class GUI {
     public void notifyUser(String text) {
         View notificationView = viewMapper.get(NotificationView.id);
         notificationView.performAction(text);
-        changeView(notificationView);
+        changeView(NotificationView.id);
     }
 
     public void nextView() {
@@ -120,10 +142,6 @@ public class GUI {
 
     public void setNextViewId(String id) {
         nextViewId = id;
-    }
-
-    public void changeView(View view) {
-        changeView(view.getId());
     }
 
     public void changeView(String desiredViewId) {
@@ -141,14 +159,35 @@ public class GUI {
         cardLayout.show(cardLayoutViewHolder, desiredViewId);
     }
 
-    /** Try to load icon for the app, use default icon if something goes wrong. */
     private void loadAppIcon() {
         try {
-            Image small = ImageIO.read(Main.class.getClassLoader().getResourceAsStream("B-25.png"));
-            frame.setIconImage(small);
+            java.util.List<Image> list = new ArrayList<>();
+            if (isWindows()) {
+                /* On Windows 25x25 looks smoothest in typical use cases,
+                 * but JRE won't choose it if other sizes are available. */
+                addIconToList("B-25.png", list);
+            }
+            else {
+                addIconToList("B-25.png", list);
+                addIconToList("B-26.png", list);
+                addIconToList("B-32.png", list);
+                addIconToList("B-50.png", list);
+                addIconToList("B-52.png", list);
+                addIconToList("B-64.png", list);
+            }
+            frame.setIconImages(list);
         } catch (Exception e) {
-            /* Use default icon. */
+            /* Fallback to default icon. */
         }
+    }
+
+    private void addIconToList(String iconPath, java.util.List<Image> list) throws IOException {
+        Image icon = ImageIO.read(Main.class.getClassLoader().getResourceAsStream(iconPath));
+        list.add(icon);
+    }
+
+    public void popupError(String msg) {
+        JOptionPane.showMessageDialog(frame, msg);
     }
 
     public static Point getPoint(MouseEvent e) {
@@ -157,5 +196,15 @@ public class GUI {
 
     public JFrame getFrame() {
         return frame;
+    }
+
+    public static String OS = System.getProperty("os.name").toLowerCase();
+
+    public static boolean isUnix() {
+        return (OS.contains("nix") || OS.contains("nux") || OS.contains("aix"));
+    }
+
+    public static boolean isWindows() {
+        return (OS.contains("win"));
     }
 }

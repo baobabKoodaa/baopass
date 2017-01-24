@@ -1,12 +1,13 @@
 package crypto;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Base64;
+import java.util.*;
 
 public class Utils {
 
@@ -112,6 +113,19 @@ public class Utils {
         return true;
     }
 
+    public static Map<String, String> getMapFromFile(File file) throws FileNotFoundException {
+        Scanner scanner = new Scanner(file, "UTF-8");
+        HashMap<String, String> map = new HashMap<>();
+        scanner.nextLine(); // first line is general info.
+        while (scanner.hasNext()){
+            String[] line = scanner.nextLine().split(":", 2);
+            String key = line[0];
+            String val = line[1];
+            map.put(key, val);
+        }
+        scanner.close();
+        return map;
+    }
 
     /** This hack disables export restrictions on cryptography, allowing us to
      *  use 256-bit AES with GCM mode with normal JRE configurations.

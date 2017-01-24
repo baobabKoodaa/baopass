@@ -1,10 +1,11 @@
 package crypto;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.security.SecureRandom;
+import java.util.Random;
 
 import static crypto.Utils.byteArrayEquals;
 import static crypto.Utils.charArrayEquals;
@@ -18,7 +19,7 @@ public class RetrievabilityTest {
     @Test
     public void masterKeyAlwaysRetrievableTest() throws Exception {
         Utils.hackCryptographyExportRestrictions();
-        BaoPass baoPass = new BaoPass(new EntropyCollector());
+        BaoPassCore baoPassCore = new BaoPassCore(new EntropyCollector());
         SecureRandom rng = new SecureRandom();
         byte[] masterKeyBytes = new byte[384/8];
         rng.nextBytes(masterKeyBytes);
@@ -29,10 +30,10 @@ public class RetrievabilityTest {
             rng.nextBytes(masterPassBytes);
             char[] masterPassChars = new String(masterPassBytes).toCharArray();
             EncryptedMessage enc = AES.encrypt(masterKeyBytes, masterPassChars);
-            baoPass.setMasterKeyEncrypted(enc);
-            baoPass.decryptMasterKey(masterPassChars);
+            baoPassCore.setMasterKeyEncrypted(enc);
+            baoPassCore.decryptMasterKey(masterPassChars);
             int end = originalMasterKeyChars.length;
-            char[] returnedChars = baoPass.getMasterKeyPlainText();
+            char[] returnedChars = baoPassCore.getMasterKeyPlainText();
 
             /* Test that decrypting an encrypted master key returns the original. */
             assertEquals(originalMasterKeyChars.length, returnedChars.length);
@@ -46,9 +47,13 @@ public class RetrievabilityTest {
             assertFalse(byteArrayEquals(masterKeyBytes, enc.getCipherText()));
 
             /* File ops: Test that loading a saved EncryptedMessage returns the original. */
-            enc.saveToFile("target/temp.txt");
-            EncryptedMessage enc2 = new EncryptedMessage(new File("target/temp.txt"));
+            String tempFilePath = getTempFilePath();
+            System.out.println(tempFilePath);
+            enc.saveToFile(tempFilePath);
+            File tempFile = new File(tempFilePath);
+            EncryptedMessage enc2 = new EncryptedMessage(tempFile);
             assertEquals(enc, enc2);
+            tempFile.delete();
         }
     }
 
@@ -89,6 +94,12 @@ public class RetrievabilityTest {
             break;
         }
         return (j==chars.length);
+    }
+
+    private String getTempFilePath() {
+        String targetDir = System.getProperty("user.dir") + File.separator + "target";
+        String randomFileName = "tempFileCreatedByTest" + new Random().nextInt(10000000) + ".txt";
+        return targetDir + File.separator + randomFileName;
     }
 
 }

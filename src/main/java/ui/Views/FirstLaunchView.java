@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import ui.ClickListener;
 import ui.GUI;
 
@@ -13,12 +13,11 @@ public class FirstLaunchView extends View {
     public static final String id = "FIRST_LAUNCH_VIEW";
 
     GUI gui;
-    BaoPass baoPass;
+    BaoPassCore baoPassCore;
 
-    public FirstLaunchView(GUI gui, BaoPass baoPass) {
-        super(); /* Initialize inherited JPanel. */
+    public FirstLaunchView(GUI gui, BaoPassCore baoPassCore) {
         this.gui = gui;
-        this.baoPass = baoPass;
+        this.baoPassCore = baoPassCore;
         setLayout(new GridBagLayout());
         JPanel buttons = new JPanel(new GridLayout(4, 1));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -36,7 +35,7 @@ public class FirstLaunchView extends View {
         JCheckBox checkBoxRemember = new JCheckBox("Remember this key");
         checkBoxRemember.setFont(gui.regularFont);
         checkBoxRemember.setHorizontalAlignment(JLabel.CENTER);
-        if (baoPass.getPreferenceRememberKey()) {
+        if (baoPassCore.getPreferenceRememberKey()) {
             checkBoxRemember.doClick();
         }
         checkBoxRemember.addActionListener(new ClickListener(this, "Checkbox"));
@@ -46,7 +45,7 @@ public class FirstLaunchView extends View {
     }
 
     private void generateNewKey() {
-        if (baoPass.generateMasterKey() != null) {
+        if (baoPassCore.generateMasterKey() != null) {
             gui.notifyUser("<html>Your random keyfile has been<br>" +
                     "generated succesfully. Next you<br>" +
                     "will be asked to choose a master<br>" +
@@ -58,7 +57,7 @@ public class FirstLaunchView extends View {
     }
 
     private void loadOldKey() {
-        if (baoPass.loadEncryptedMasterKey(askUserForFile())) {
+        if (baoPassCore.loadEncryptedMasterKey(askUserForFile())) {
             gui.changeView(MainView.id);
             SwingUtilities.invokeLater(hackToImproveGUIResponsiveness);
         } else {
@@ -71,7 +70,7 @@ public class FirstLaunchView extends View {
     Runnable hackToImproveGUIResponsiveness = new Runnable() {
         @Override
         public void run() {
-            baoPass.decryptMasterKey(new char[0]);
+            baoPassCore.decryptMasterKey(new char[0]);
         }
     };
 
@@ -97,7 +96,8 @@ public class FirstLaunchView extends View {
         switch (id) {
             case "Create new master key":generateNewKey();break;
             case "Load old master key":loadOldKey();break;
-            case "Checkbox":baoPass.flipPreferenceRememberKey();break;
+            case "Checkbox":
+                baoPassCore.flipPreferenceRememberKey();break;
             default:break;
         }
     }

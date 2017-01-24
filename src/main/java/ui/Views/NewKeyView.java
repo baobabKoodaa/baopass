@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import ui.GUI;
 
 import javax.swing.*;
@@ -16,16 +16,15 @@ public class NewKeyView extends View {
     private static final String TEXT_BUTTON_ENCRYPT = "Encrypt";
 
     private GUI gui;
-    private BaoPass baoPass;
+    private BaoPassCore baoPassCore;
 
     JPasswordField MASTER_PASS_1;
     JPasswordField MASTER_PASS_2;
     JButton buttonEncryptNewKey;
 
-    public NewKeyView(GUI gui, BaoPass baoPass) {
-        super(); /* Initialize inherited JPanel. */
+    public NewKeyView(GUI gui, BaoPassCore baoPassCore) {
         this.gui = gui;
-        this.baoPass = baoPass;
+        this.baoPassCore = baoPassCore;
         setLayout(new GridBagLayout());
         JPanel contents = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -70,7 +69,7 @@ public class NewKeyView extends View {
                 // TODO: complain
                 return;
             }
-            if (baoPass.encryptMasterKey(pw1)) {
+            if (baoPassCore.encryptMasterKey(pw1)) {
                 gui.notifyUser("<html>Your keyfile has been encrypted<br>" +
                         "succesfully and saved under filename<br>" +
                         "key1.baopass<br>");

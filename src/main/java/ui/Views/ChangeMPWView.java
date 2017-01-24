@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPass;
+import app.BaoPassCore;
 import crypto.Utils;
 import ui.GUI;
 
@@ -14,7 +14,7 @@ public class ChangeMPWView extends View {
     public static final String id = "CHANGE_MPW_VIEW";
 
     GUI gui;
-    BaoPass baoPass;
+    BaoPassCore baoPassCore;
 
     private JPasswordField MASTER_PASS_OLD;
     private JPasswordField MASTER_PASS_NEW1;
@@ -23,10 +23,9 @@ public class ChangeMPWView extends View {
     private JButton buttonCancelMPWChange;
     private JButton buttonEncryptOldKey;
 
-    public ChangeMPWView(GUI gui, BaoPass baoPass) {
-        super(); /* Initialize inherited JPanel. */
+    public ChangeMPWView(GUI gui, BaoPassCore baoPassCore) {
         this.gui = gui;
-        this.baoPass = baoPass;
+        this.baoPassCore = baoPassCore;
 
         setLayout(new GridBagLayout());
         JPanel contents = new JPanel(new GridBagLayout());
@@ -84,7 +83,7 @@ public class ChangeMPWView extends View {
 
     void performMasterPasswordChange() {
         char[] oldMPW = MASTER_PASS_OLD.getPassword();
-        boolean oldPassCorrect = baoPass.decryptMasterKey(oldMPW);
+        boolean oldPassCorrect = baoPassCore.decryptMasterKey(oldMPW);
         if (!oldPassCorrect) {
             // TODO: complain
             return;
