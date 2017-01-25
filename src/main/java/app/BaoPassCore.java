@@ -7,6 +7,7 @@ import util.Utils;
 import javax.crypto.SecretKey;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,13 +53,20 @@ public class BaoPassCore {
     }
 
     /* Encrypts master key with given password, saves to file, remembers according to preferences. */
-    public String encryptMasterKey(char[] passwordForEncryption) throws Exception {
+    public void encryptMasterKey(char[] passwordForEncryption) throws Exception {
         if (masterKeyPlainText == null || masterKeyPlainText.length == 0) {
             throw new RuntimeException("Master key not found!");
         }
         masterKeyEncrypted = AES.encrypt(Utils.getBytesFromChars(masterKeyPlainText), passwordForEncryption);
         forgetMasterKeyPlainText();
+    }
+
+    public String saveEncryptedMasterKey() throws IOException {
         String fileName = config.getNextAvailableNameForKeyFile();
+        return saveEncryptedMasterKey(fileName);
+    }
+
+    public String saveEncryptedMasterKey(String fileName) throws IOException {
         String filePath = config.getDirPath() + File.separator + fileName;
         masterKeyEncrypted.saveToFile(filePath);
         if (getPreferenceRememberKey()) {
@@ -114,6 +122,7 @@ public class BaoPassCore {
         Files.move(pathActiveKeyFile, whereToMoveOldKeyFile);
 
         encryptMasterKey(newMPW);
+        saveEncryptedMasterKey(activeKeyName);
         //TODO: verify success
         return Notifications.MPWchange(oldKeyName, activeKeyName);
     }

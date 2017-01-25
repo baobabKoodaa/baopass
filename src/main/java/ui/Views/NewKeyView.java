@@ -73,7 +73,8 @@ public class NewKeyView extends View {
             return;
         }
         try {
-            String fileName = baoPassCore.encryptMasterKey(pw1);
+            baoPassCore.encryptMasterKey(pw1);
+            String fileName = baoPassCore.saveEncryptedMasterKey();
             gui.notifyUser(Notifications.SUCCESSFUL_NEW_KEY_ENCRYPTION + fileName);
             gui.nextViewId = MainView.id;
         } catch (InvalidKeyException ex) {
