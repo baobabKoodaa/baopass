@@ -1,12 +1,16 @@
 package app;
 
 import crypto.*;
+import util.Notifications;
 import util.Utils;
 
 import javax.crypto.SecretKey;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 
 import static util.Utils.*;
@@ -53,7 +57,7 @@ public class BaoPassCore {
         if (masterKeyPlainText == null || masterKeyPlainText.length == 0) {
             throw new RuntimeException("Master key not found!");
         }
-        masterKeyEncrypted = AES.encrypt(new String(masterKeyPlainText).getBytes(), passwordForEncryption);
+        masterKeyEncrypted = AES.encrypt(Utils.getBytesFromChars(masterKeyPlainText), passwordForEncryption);
         forgetMasterKeyPlainText();
         String fileName = config.getNextAvailableNameForKeyFile();
         String filePath = config.getDirPath() + File.separator + fileName;
@@ -71,10 +75,6 @@ public class BaoPassCore {
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 
-    public boolean hasActiveKeyfile() {
-        return masterKeyEncrypted != null;
-    }
-
     public boolean loadEncryptedMasterKey(File file) {
         try {
             masterKeyEncrypted = new EncryptedMessage(file);
@@ -90,7 +90,8 @@ public class BaoPassCore {
     }
 
     public void decryptMasterKey(char[] masterPassword) throws Exception {
-        masterKeyPlainText = new String(AES.decrypt(masterKeyEncrypted, masterPassword)).toCharArray();
+        byte[] bytes = AES.decrypt(masterKeyEncrypted, masterPassword);
+        masterKeyPlainText = Utils.getCharsFromBytes(bytes);
     }
 
     public void forgetMasterKeyPlainText() {
@@ -104,6 +105,18 @@ public class BaoPassCore {
 
     public char[] getMasterKeyPlainText() {
         return this.masterKeyPlainText;
+    }
+
+    public String changeMPW(char[] newMPW) throws Exception {
+        String activeKeyName = getActiveKeyName();
+        String oldKeyName = config.getNextAvailableNameForOldKeyFile();
+        Path pathActiveKeyFile = Paths.get(getConfigDirPath() + File.separator + getActiveKeyName());
+        Path whereToMoveOldKeyFile = pathActiveKeyFile.resolveSibling(oldKeyName);
+        Files.move(pathActiveKeyFile, whereToMoveOldKeyFile);
+
+        encryptMasterKey(newMPW);
+        //TODO: verify success
+        return Notifications.MPWchange(oldKeyName, activeKeyName);
     }
 
     public boolean getPreferenceHideSitePass() {
@@ -141,6 +154,14 @@ public class BaoPassCore {
 
     public String getConfigDirPath() {
         return config.getDirPath();
+    }
+
+    public boolean hasActiveKeyFile() {
+        return masterKeyEncrypted != null;
+    }
+
+    public String getActiveKeyName() {
+        return config.getActiveKeyName();
     }
 
 }

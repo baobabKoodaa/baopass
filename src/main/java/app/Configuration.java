@@ -109,6 +109,17 @@ public class Configuration {
         }
     }
 
+    public String getNextAvailableNameForOldKeyFile() {
+        File configDir = new File(getDirPath());
+        String fileName = getActiveKeyName() + ".old";
+        for (int i=2 ;; i++) {
+            File file = new File(configDir + File.separator + fileName);
+            if (!file.exists()) return fileName;
+            /* Increment counter in name. */
+            fileName = getActiveKeyName() + ".old" + i;
+        }
+    }
+
     public boolean getPreferenceRememberKey() {
         return Boolean.parseBoolean(configMap.get(MapKeys.PREFERENCE_REMEMBER_KEY));
     }

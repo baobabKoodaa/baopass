@@ -25,7 +25,7 @@ public class RetrievabilityTest {
         byte[] masterKeyBytes = new byte[384/8];
         rng.nextBytes(masterKeyBytes);
         char[] originalMasterKeyChars = Utils.getUrlSafeCharsFromBytes(masterKeyBytes);
-        masterKeyBytes = new String(originalMasterKeyChars).getBytes();
+        masterKeyBytes = Utils.getBytesFromChars(originalMasterKeyChars);
         for (int passwordLength=1; passwordLength<100; passwordLength++) {
             byte[] masterPassBytes = new byte[passwordLength];
             rng.nextBytes(masterPassBytes);
@@ -49,7 +49,6 @@ public class RetrievabilityTest {
 
             /* File ops: Test that loading a saved EncryptedMessage returns the original. */
             String tempFilePath = getTempFilePath();
-            System.out.println(tempFilePath);
             enc.saveToFile(tempFilePath);
             File tempFile = new File(tempFilePath);
             EncryptedMessage enc2 = new EncryptedMessage(tempFile);

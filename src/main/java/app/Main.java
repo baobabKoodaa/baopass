@@ -12,7 +12,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         EntropyCollector entropyCollector = new EntropyCollector();
         BaoPassCore baoPassCore = new BaoPassCore(entropyCollector);
-        String initialView = (baoPassCore.hasActiveKeyfile() ? MainView.id : FirstLaunchView.id);
+        String initialView = (baoPassCore.hasActiveKeyFile() ? MainView.id : FirstLaunchView.id);
 
         /* Swing GUIs are recommended to run on the Event Dispatch Thread. */
         EventQueue.invokeLater(new Runnable() {

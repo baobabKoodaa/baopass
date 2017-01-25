@@ -102,9 +102,14 @@ public class ChangeMPWView extends View {
             gui.popupError(ErrorMessages.PASSWORDS_DO_NOT_MATCH);
             return;
         }
-        //TODO: encrypt, file operations, save preferences, verify
-        //gui.notifyUser(Notifications.SUCCESSFUL_MASTER_PASSWORD_CHANGE);
-        gui.notifyUser("Feature not implemented yet.");
+
+        try {
+            String result = baoPassCore.changeMPW(newMPW1);
+            gui.notifyUser(result);
+        } catch (Exception ex) {
+            gui.popupError(ErrorMessages.INTERNAL_FAILURE + ex.toString());
+        }
+
         gui.setNextViewId(MainView.id);
         wipe(oldMPW);
         wipe(newMPW1);

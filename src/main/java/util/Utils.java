@@ -5,6 +5,9 @@ import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormat;
@@ -23,24 +26,35 @@ public class Utils {
         return dateFormat.format(new Date());
     }
 
+    public static char[] getCharsFromBytes(final byte[] bytesIn) {
+        char[] charsOut = new char[bytesIn.length];
+        for (int i=0; i<bytesIn.length; i++) {
+            charsOut[i] = (char) (bytesIn[i] & 0xFF);
+        }
+        return charsOut;
+    }
+
+    /* Modified from http://stackoverflow.com/a/9670279/4490400 . */
+    public static byte[] getBytesFromChars(final char[] charsIn) {
+        CharBuffer charBuffer = CharBuffer.wrap(charsIn);
+        ByteBuffer byteBuffer = Charset.forName("UTF-8").encode(charBuffer);
+        byte[] bytesOut = Arrays.copyOfRange(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
+        Arrays.fill(byteBuffer.array(), (byte) 0);
+        return bytesOut;
+    }
+
     /** Note that output size is larger than input due to conversion.
      *  Also note that last chars may be '=' due to Encoder's padding. */
     public static char[] getUrlSafeCharsFromBytes(final byte[] bytesIn) {
         Base64.Encoder enc = Base64.getUrlEncoder();
         byte[] bytesOut = enc.encode(bytesIn);
-        char[] charsOut = new char[bytesOut.length];
-        for (int i=0; i<bytesOut.length; i++) {
-            charsOut[i] = (char) bytesOut[i];
-        }
+        char[] charsOut = getCharsFromBytes(bytesOut);
         return charsOut;
     }
 
     /** Compatible with the output from the method above. */
     public static byte[] getBytesFromUrlSafeChars(final char[] charsIn) {
-        byte[] bytesIn = new byte[charsIn.length];
-        for (int i=0; i<charsIn.length; i++) {
-            bytesIn[i] = (byte) charsIn[i];
-        }
+        byte[] bytesIn = getBytesFromChars(charsIn);
         Base64.Decoder dec = Base64.getUrlDecoder();
         byte[] bytesOut = dec.decode(bytesIn);
         return bytesOut;
