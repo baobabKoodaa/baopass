@@ -51,7 +51,7 @@ public class Configuration {
     }
 
     public File getActiveKeyFile() {
-        String fileName = configMap.get(MapKeys.ACTIVE_KEY);
+        String fileName = getActiveKeyName();
         if (fileName == null || fileName.isEmpty()) {
             return null;
         }

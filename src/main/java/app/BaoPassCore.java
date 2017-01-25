@@ -1,8 +1,6 @@
 package app;
 
 import crypto.*;
-import ui.GUI;
-import util.MapKeys;
 import util.Utils;
 
 import javax.crypto.SecretKey;
@@ -13,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
 
 import static util.Utils.*;
 
-/** Core contains state and convenience methods for key/pass generation, encryption, etc. */
+/** Core contains state and convenience methods for key/pass generation, encryption, config, etc. */
 public class BaoPassCore {
 
     /* Few iterations for site pass is ok, because master key has high entropy. */

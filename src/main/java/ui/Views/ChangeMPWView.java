@@ -17,13 +17,14 @@ public class ChangeMPWView extends View {
 
     public static final String id = "CHANGE_MPW_VIEW";
 
+    /* Dependencies. */
     GUI gui;
     BaoPassCore baoPassCore;
 
+    /* Properties. */
     private JPasswordField MASTER_PASS_OLD;
     private JPasswordField MASTER_PASS_NEW1;
     private JPasswordField MASTER_PASS_NEW2;
-
     private JButton buttonCancelMPWChange;
     private JButton buttonEncryptOldKey;
 

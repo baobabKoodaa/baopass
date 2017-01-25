@@ -54,12 +54,10 @@ public class MainView extends View {
     JPasswordField MPW;
     private JTextField keywordField;
     JLabel sitePass;
-
     private JLabel lockIcon;
     private boolean locked;
     private ImageIcon closedLockIcon;
     private ImageIcon openLockIcon;
-
     private String hashOfWhatWeSetClipboardTo;
 
     public MainView(GUI gui, BaoPassCore baoPassCore) throws IOException {

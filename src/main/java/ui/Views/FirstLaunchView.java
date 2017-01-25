@@ -66,24 +66,11 @@ public class FirstLaunchView extends View {
         }
         if (baoPassCore.loadEncryptedMasterKey(file)) {
             gui.changeView(MainView.id);
-            SwingUtilities.invokeLater(hackToImproveGUIResponsiveness);
+            SwingUtilities.invokeLater(gui.hackToImproveGUIResponsiveness);
         } else {
             gui.popupError(ErrorMessages.KEYFILE_LOAD_FAILED);
         }
     }
-
-    /** The very first time decryption is called is a bit slow.
-     *  This dummy call exists to burn that first-time slowness. */
-    Runnable hackToImproveGUIResponsiveness = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                baoPassCore.decryptMasterKey(new char[0]);
-            } catch (Exception ex) {
-                /* Expected decryption to fail due to invalid password. */
-            }
-        }
-    };
 
     private File askUserForFile() {
         JFileChooser chooser = new JFileChooser();

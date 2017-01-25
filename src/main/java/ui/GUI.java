@@ -93,6 +93,7 @@ public class GUI {
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);
         entropyCollector.collect(System.nanoTime());
+        SwingUtilities.invokeLater(hackToImproveGUIResponsiveness);
     }
 
     /** Called for each view when constructing the GUI. */
@@ -208,4 +209,17 @@ public class GUI {
     public static boolean isWindows() {
         return (OS.contains("win"));
     }
+
+    /** The very first time decryption is called is a bit slow (is Java lazy-loading the keyfile?)
+     *  This dummy call exists to burn that first-time slowness. */
+    public Runnable hackToImproveGUIResponsiveness = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                baoPassCore.decryptMasterKey(new char[0]);
+            } catch (Exception ex) {
+                /* Expected decryption to fail due to invalid password. */
+            }
+        }
+    };
 }
