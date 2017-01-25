@@ -1,7 +1,0 @@
-Master key encrypted with AES/GCM/NoPadding, saved in Base64URLSafe encoding.
-bitsOfEntropy:384
-cipherText:NYcmECWqnwhNtTEpCUOsE_JAOtIms1ZRNz-U9DIKB634IYb9aGBgDirKZbyM2yzFPRtS3DrLRUDVKGUNB6DTvBueXbOaTA9Xilreq_x5czA=
-salt:Yfw_gFWHzo9yi4YcNTFrePvf-8Hvs-kTuSp4Ld73ik8=
-iv:FEVTkZSv4iSdgFjt
-PBKDF2iterationsForAESkey:10000
-AESkeyLen:128

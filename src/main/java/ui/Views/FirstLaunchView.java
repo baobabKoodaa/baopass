@@ -1,12 +1,16 @@
 package ui.Views;
 
 import app.BaoPassCore;
-import ui.ClickListener;
+import ui.Listeners.ClickListener;
 import ui.GUI;
+import util.ErrorMessages;
+import util.Notifications;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
 
 public class FirstLaunchView extends View {
 
@@ -45,23 +49,26 @@ public class FirstLaunchView extends View {
     }
 
     private void generateNewKey() {
-        if (baoPassCore.generateMasterKey() != null) {
-            gui.notifyUser("<html>Your random keyfile has been<br>" +
-                    "generated succesfully. Next you<br>" +
-                    "will be asked to choose a master<br>" +
-                    "password to encrypt the keyfile.");
+        try {
+            baoPassCore.generateMasterKey();
+            gui.notifyUser(Notifications.SUCCESSFUL_KEY_GENERATION);
             gui.setNextViewId(NewKeyView.id);
-        } else {
-            // TODO
+        } catch (NoSuchAlgorithmException|UnsupportedEncodingException ex) {
+            gui.popupError(ErrorMessages.INTERNAL_FAILURE + ex.toString());
         }
     }
 
     private void loadOldKey() {
-        if (baoPassCore.loadEncryptedMasterKey(askUserForFile())) {
+        File file = askUserForFile();
+        if (file == null) {
+            /* User clicked cancel. */
+            return;
+        }
+        if (baoPassCore.loadEncryptedMasterKey(file)) {
             gui.changeView(MainView.id);
             SwingUtilities.invokeLater(hackToImproveGUIResponsiveness);
         } else {
-            // TODO
+            gui.popupError(ErrorMessages.KEYFILE_LOAD_FAILED);
         }
     }
 
@@ -70,13 +77,17 @@ public class FirstLaunchView extends View {
     Runnable hackToImproveGUIResponsiveness = new Runnable() {
         @Override
         public void run() {
-            baoPassCore.decryptMasterKey(new char[0]);
+            try {
+                baoPassCore.decryptMasterKey(new char[0]);
+            } catch (Exception ex) {
+                /* Expected decryption to fail due to invalid password. */
+            }
         }
     };
 
     private File askUserForFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setCurrentDirectory(new java.io.File("."));
+        chooser.setCurrentDirectory(new File(baoPassCore.getConfigDirPath()));
         chooser.setDialogTitle("Choose encrypted keyfile");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setAcceptAllFileFilterUsed(false);
@@ -87,18 +98,17 @@ public class FirstLaunchView extends View {
     }
 
     @Override
-    public String getId() {
-        return id;
-    }
-
-    @Override
     public void performAction(String id) {
         switch (id) {
             case "Create new master key":generateNewKey();break;
             case "Load old master key":loadOldKey();break;
-            case "Checkbox":
-                baoPassCore.flipPreferenceRememberKey();break;
+            case "Checkbox":baoPassCore.flipPreferenceRememberKey();break;
             default:break;
         }
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 }

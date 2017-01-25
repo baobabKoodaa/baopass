@@ -2,13 +2,14 @@ package crypto;
 
 import app.BaoPassCore;
 import org.junit.jupiter.api.Test;
+import util.Utils;
 
 import java.io.File;
 import java.security.SecureRandom;
 import java.util.Random;
 
-import static crypto.Utils.byteArrayEquals;
-import static crypto.Utils.charArrayEquals;
+import static util.Utils.byteArrayEquals;
+import static util.Utils.charArrayEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Make sure reversible operations are actually reversible. */

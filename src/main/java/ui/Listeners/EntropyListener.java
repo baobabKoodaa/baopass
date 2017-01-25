@@ -1,10 +1,8 @@
-package ui;
+package ui.Listeners;
 
 import crypto.EntropyCollector;
+import util.Point;
 
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.event.*;
 
 import static ui.GUI.getPoint;

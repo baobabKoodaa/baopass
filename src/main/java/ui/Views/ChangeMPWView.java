@@ -1,13 +1,17 @@
 package ui.Views;
 
 import app.BaoPassCore;
-import crypto.Utils;
+import util.ErrorMessages;
+import util.Notifications;
+import util.Utils;
 import ui.GUI;
 
+import javax.crypto.AEADBadTagException;
 import javax.swing.*;
 import java.awt.*;
+import java.security.InvalidKeyException;
 
-import static crypto.Utils.wipe;
+import static util.Utils.wipe;
 
 public class ChangeMPWView extends View {
 
@@ -76,30 +80,30 @@ public class ChangeMPWView extends View {
         add(contents);
     }
 
-    @Override
-    public String getId() {
-        return id;
-    }
-
     void performMasterPasswordChange() {
         char[] oldMPW = MASTER_PASS_OLD.getPassword();
-        boolean oldPassCorrect = baoPassCore.decryptMasterKey(oldMPW);
-        if (!oldPassCorrect) {
-            // TODO: complain
+        try {
+            baoPassCore.decryptMasterKey(oldMPW);
+        } catch (InvalidKeyException ex) {
+            gui.popupError(ErrorMessages.CRYPTO_EXPORT_RESTRICTIONS);
+            return;
+        } catch (AEADBadTagException ex) {
+            gui.popupError(ErrorMessages.INVALID_OLD_MASTER_PASSWORD);
+            return;
+        } catch (Exception ex) {
+            gui.popupError(ErrorMessages.INTERNAL_FAILURE);
             return;
         }
+
         char[] newMPW1 = MASTER_PASS_NEW1.getPassword();
         char[] newMPW2 = MASTER_PASS_NEW2.getPassword();
         if (!Utils.charArrayEquals(newMPW1, newMPW2)) {
-            // TODO: complain
+            gui.popupError(ErrorMessages.PASSWORDS_DO_NOT_MATCH);
             return;
         }
-        //TODO: encrypt, file operations, verify.
-        gui.notifyUser("<html>Master password changed<br>" +
-                "succesfully. You should<br>" +
-                "backup the updated keyfile<br>" +
-                "key.baopass - old keyfile<br>" +
-                "has been renamed oldkey.baopass");
+        //TODO: encrypt, file operations, save preferences, verify
+        //gui.notifyUser(Notifications.SUCCESSFUL_MASTER_PASSWORD_CHANGE);
+        gui.notifyUser("Feature not implemented yet.");
         gui.setNextViewId(MainView.id);
         wipe(oldMPW);
         wipe(newMPW1);
@@ -123,5 +127,10 @@ public class ChangeMPWView extends View {
             case "Cancel":cancelMasterPasswordChange();break;
             default:break;
         }
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 }

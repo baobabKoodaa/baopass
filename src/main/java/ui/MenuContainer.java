@@ -1,5 +1,7 @@
 package ui;
 
+import app.BaoPassCore;
+import ui.Listeners.ClickListener;
 import ui.Views.ChangeMPWView;
 import ui.Views.FirstLaunchView;
 import ui.Views.MainView;
@@ -9,31 +11,34 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-/** The top side MenuContainer with options etc. */
+/** Top menu with options etc. */
 public class MenuContainer extends JMenuBar {
-
-    public static final String ABOUT_ID = "ABOUT";
 
     public static final String SWITCH_ACTIVE_KEYFILE = "Switch active keyfile";
     public static final String CHANGE_MASTER_PASSWORD = "Change master password";
     public static final String HIDE_SITE_PASS = "Hide site pass";
 
-    /* File */
+    /* Element Ids. */
+    public static final String ABOUT_ID = "ABOUT";
+
+    /* Under "File" menu */
     public JMenuItem switchKey;
     public JMenuItem changeMPW;
-    /* Options */
+    /* Under "Options" menu */
     public JCheckBoxMenuItem hideSitePass;
     /* About */
     public JMenu aboutMenu;
 
     /* Dependencies. */
     GUI gui;
+    BaoPassCore baoPass;
     View notificationView;
     MainView mainView;
 
-    public MenuContainer(GUI gui, View notificationView, MainView mainView) {
+    public MenuContainer(GUI gui, BaoPassCore baoPass, View notificationView, MainView mainView) {
         super();
         this.gui = gui;
+        this.baoPass = baoPass;
         this.notificationView = notificationView;
         this.mainView = mainView;
 
@@ -68,10 +73,10 @@ public class MenuContainer extends JMenuBar {
         return out;
     }
 
-    public void userToggledHiteSitePass() {
+    private void userToggledHiteSitePass() {
         try {
             mainView.generateSitePass();
-            //TODO: async ? save to preferences ?
+            baoPass.setPreferenceHideSitePass(hideSitePass.getState());
         } catch (Exception ex) {
             /* Refresh failed. Do nothing. */
         }

@@ -2,6 +2,7 @@ package ui.Views;
 
 import app.BaoPassCore;
 import ui.GUI;
+import util.Notifications;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,9 +11,11 @@ public class NotificationView extends View {
 
     public static final String id = "NOTIFICATION_VIEW";
 
+    /* Dependencies. */
     GUI gui;
     BaoPassCore baoPassCore;
 
+    /* Properties. */
     private JLabel notificationText;
     private JButton buttonOkNotification;
 
@@ -40,9 +43,13 @@ public class NotificationView extends View {
         add(inc2);
     }
 
-    @Override
-    public String getId() {
-        return id;
+    private void userClickedAboutMenu() {
+        gui.notifyUser(Notifications.ABOUT);
+        SwingUtilities.invokeLater(gui.menu.deselectAboutMenu);
+    }
+
+    private void displayNotification(String text) {
+        notificationText.setText(text);
     }
 
     @Override
@@ -50,12 +57,14 @@ public class NotificationView extends View {
         if ("OK".equals(action)) {
             gui.nextView();
         } else if (gui.menu.ABOUT_ID.equals(action)) {
-            gui.notifyUser("<html>BaoPass by Baobab, unreleased<br>developer version. For updates,<br>visit https://baobab.fi/baopass");
-            SwingUtilities.invokeLater(gui.menu.deselectAboutMenu);
+            userClickedAboutMenu();
         } else {
-            notificationText.setText(action);
+            displayNotification(action);
         }
     }
 
-
+    @Override
+    public String getId() {
+        return id;
+    }
 }

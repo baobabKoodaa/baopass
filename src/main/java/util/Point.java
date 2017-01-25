@@ -1,6 +1,6 @@
-package ui;
+package util;
 
-/** Holds mouse coordinates (to collect entropy from mouse movements). */
+/** Wrapper for mouse coordinates (used to collect entropy from mouse movements). */
 public class Point {
 
     public int y;

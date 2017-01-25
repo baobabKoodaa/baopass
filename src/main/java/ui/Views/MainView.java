@@ -3,10 +3,12 @@ package ui.Views;
 import app.BaoPassCore;
 import app.Main;
 import crypto.PBKDF2;
-import ui.ClickListener;
+import ui.Listeners.ClickListener;
 import ui.GUI;
-import ui.TextListener;
+import ui.Listeners.TextListener;
+import util.ErrorMessages;
 
+import javax.crypto.AEADBadTagException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -15,6 +17,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -147,7 +150,7 @@ public class MainView extends View {
             setClipboard(new String(sitePassChars));
             scheduler.schedule(clearSitePassFromClipboard, SECONDS_TO_KEEP_SITE_PASS_IN_CLIPBOARD, TimeUnit.SECONDS);
         } catch (Exception ex) {
-            gui.popupError("Internal failure! Clipboard probably does not contain your password right now.");
+            gui.popupError(ErrorMessages.CLIPBOARD_FAILURE);
         }
     }
 
@@ -219,23 +222,27 @@ public class MainView extends View {
         }
     }
 
-    @Override
-    public String getId() {
-        return id;
-    }
-
     /** When user inserts a character to MPW field, try to decrypt. */
     private void MPWfieldChanged() {
         char[] mpw = MPW.getPassword();
-        if (baoPassCore.decryptMasterKey(mpw)) {
-            openLock();
-            if (!keywordField.getText().isEmpty()) {
-                /* If keyword field is not empty, generate site pass as well. */
-                KWfieldChanged();
-            }
-        } else {
-            /* We try to decrypt on every keystroke, so don't report error. */
+        try {
+            baoPassCore.decryptMasterKey(mpw);
+        } catch (InvalidKeyException ex) {
+            gui.popupError(ErrorMessages.CRYPTO_EXPORT_RESTRICTIONS);
+            return;
+        } catch (AEADBadTagException ex) {
+            /* Invalid password. Do not report error, we try to decrypt on every keystroke. */
             closeLock(false, false);
+            return;
+        } catch (Exception ex) {
+            gui.popupError(ErrorMessages.INTERNAL_FAILURE);
+            return;
+        }
+        /* Decryption succesful. */
+        openLock();
+        if (!keywordField.getText().isEmpty()) {
+            /* If keyword field is not empty, generate site pass as well. */
+            KWfieldChanged();
         }
     }
 
@@ -259,5 +266,10 @@ public class MainView extends View {
             case SITE_PASS_ID:sitePassClicked();break;
             default:break;
         }
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 }

@@ -3,6 +3,8 @@ package ui;
 import app.Main;
 import crypto.EntropyCollector;
 import app.BaoPassCore;
+import ui.Listeners.ClickListener;
+import ui.Listeners.EntropyListener;
 import ui.Views.*;
 
 import javax.imageio.ImageIO;
@@ -16,22 +18,21 @@ import java.util.HashMap;
 
 public class GUI {
 
-    public String currentViewId = FirstLaunchView.id;
-    public String nextViewId = FirstLaunchView.id;
-
-    private JFrame frame;
-    private JPanel cardLayoutViewHolder;
-    private HashMap<String, View> viewMapper;
-
-    private CardLayout cardLayout;
-    private Dimension dimension;
-    public Font regularFont;
-    public Font monospaceFont;
-
-    public BaoPassCore baoPassCore;
+    /* Dependencies. */
+    BaoPassCore baoPassCore;
     EntropyCollector entropyCollector;
     EntropyListener inputEntropyListener;
 
+    /* Properties. */
+    private JFrame frame;
+    private JPanel cardLayoutViewHolder;
+    private HashMap<String, View> viewMapper;
+    private CardLayout cardLayout;
+    private Dimension dimension;
+    public String currentViewId = FirstLaunchView.id;
+    public String nextViewId = FirstLaunchView.id;
+    public Font regularFont;
+    public Font monospaceFont;
     public MenuContainer menu;
 
     public GUI(BaoPassCore baoPassCore, EntropyCollector entropyCollector, String initialViewId) throws Exception {
@@ -64,7 +65,6 @@ public class GUI {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             InputStream is = Main.class.getClassLoader().getResourceAsStream(fontPath);
             ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, is));
-            System.out.println(ge.getAvailableFontFamilyNames().length);
         } catch (Exception ex) {
             /* If we fail at loading a font from file, the user may
              * have the font installed anyway. If they don't, we
@@ -113,7 +113,7 @@ public class GUI {
     private void createMenu() {
         View notificationView = viewMapper.get(NotificationView.id);
         MainView mainView = (MainView) viewMapper.get(MainView.id);
-        menu = new MenuContainer(this, notificationView, mainView);
+        menu = new MenuContainer(this, baoPassCore, notificationView, mainView);
         frame.setJMenuBar(menu);
     }
 
@@ -150,10 +150,11 @@ public class GUI {
         menu.changeMPW.setEnabled(ifMainView);
         if (!currentViewId.equals(desiredViewId)) {
             /* Default assumption is to set nextView as the view where user was.
-               Sometimes overridden after calling this method. */
+               Can be set to something else after calling this method. */
             nextViewId = currentViewId;
             /* We don't do this when currentView and desiredView are the same,
-               because the user could get stuck inside the "About" view. */
+               because the user could get stuck inside the "About" view.
+               That's why this is inside the if block. */
         }
         currentViewId = desiredViewId;
         cardLayout.show(cardLayoutViewHolder, desiredViewId);
@@ -176,7 +177,7 @@ public class GUI {
                 addIconToList("B-64.png", list);
             }
             frame.setIconImages(list);
-        } catch (Exception e) {
+        } catch (Exception ex) {
             /* Fallback to default icon. */
         }
     }
@@ -190,8 +191,8 @@ public class GUI {
         JOptionPane.showMessageDialog(frame, msg);
     }
 
-    public static Point getPoint(MouseEvent e) {
-        return new Point(e.getY(), e.getX());
+    public static util.Point getPoint(MouseEvent e) {
+        return new util.Point(e.getY(), e.getX());
     }
 
     public JFrame getFrame() {

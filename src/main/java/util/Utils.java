@@ -1,4 +1,4 @@
-package crypto;
+package util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -7,9 +7,21 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Utils {
+
+    public static String getCurrentDate() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return dateFormat.format(new Date());
+    }
+
+    public static String getCurrentDateTime() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd__HH_mm_ss");
+        return dateFormat.format(new Date());
+    }
 
     /** Note that output size is larger than input due to conversion.
      *  Also note that last chars may be '=' due to Encoder's padding. */

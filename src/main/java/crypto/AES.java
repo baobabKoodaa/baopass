@@ -21,7 +21,7 @@ public class AES {
     static final int KEY_LENGTH_BYTES = 32;
 
     /** In our use case, GCM Security tag size is related to the probability
-     *  that we detect . 128 is the max size. */
+     *  with which we detect incorrect passwords. 128 is the max size. */
     static final int GCM_TAG_SIZE = 128;
 
     public static EncryptedMessage encrypt(final byte[] dataToEncrypt, final char[] password)

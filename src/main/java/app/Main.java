@@ -19,7 +19,6 @@ public class Main {
             public void run() {
                 try {
                     GUI gui = new GUI(baoPassCore, entropyCollector, initialView);
-                    baoPassCore.setGui(gui);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

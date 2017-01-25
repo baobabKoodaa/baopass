@@ -2,12 +2,15 @@ package ui.Views;
 
 import app.BaoPassCore;
 import ui.GUI;
+import util.ErrorMessages;
+import util.Notifications;
 
 import javax.swing.*;
 import java.awt.*;
+import java.security.InvalidKeyException;
 
-import static crypto.Utils.charArrayEquals;
-import static crypto.Utils.wipe;
+import static util.Utils.charArrayEquals;
+import static util.Utils.wipe;
 
 /** View where user is asked to choose a password to encrypt a newly generated keyfile. */
 public class NewKeyView extends View {
@@ -15,9 +18,11 @@ public class NewKeyView extends View {
     public static final String id = "NEW_KEY_VIEW_ID";
     private static final String TEXT_BUTTON_ENCRYPT = "Encrypt";
 
+    /* Dependencies. */
     private GUI gui;
     private BaoPassCore baoPassCore;
 
+    /* Properties. */
     JPasswordField MASTER_PASS_1;
     JPasswordField MASTER_PASS_2;
     JButton buttonEncryptNewKey;
@@ -60,28 +65,32 @@ public class NewKeyView extends View {
         add(contents);
     }
 
+    public void encryptNewKey() {
+        char[] pw1 = MASTER_PASS_1.getPassword();
+        char[] pw2 = MASTER_PASS_2.getPassword();
+        if (!charArrayEquals(pw1, pw2)) {
+            gui.popupError(ErrorMessages.PASSWORDS_DO_NOT_MATCH);
+            return;
+        }
+        try {
+            String fileName = baoPassCore.encryptMasterKey(pw1);
+            gui.notifyUser(Notifications.SUCCESSFUL_NEW_KEY_ENCRYPTION + fileName);
+            gui.nextViewId = MainView.id;
+        } catch (InvalidKeyException ex) {
+            gui.popupError(ErrorMessages.CRYPTO_EXPORT_RESTRICTIONS);
+        } catch (Exception ex) {
+            gui.popupError(ErrorMessages.INTERNAL_FAILURE + ex.toString());
+        }
+        wipe(pw1);
+        wipe(pw2);
+        MASTER_PASS_1.setText("");
+        MASTER_PASS_2.setText("");
+    }
+
+    @Override
     public void performAction(String id) {
         if (TEXT_BUTTON_ENCRYPT.equals(id)) {
-            char[] pw1 = MASTER_PASS_1.getPassword();
-            char[] pw2 = MASTER_PASS_2.getPassword();
-            if (!charArrayEquals(pw1, pw2)) {
-                System.out.println("not equals");
-                // TODO: complain
-                return;
-            }
-            if (baoPassCore.encryptMasterKey(pw1)) {
-                gui.notifyUser("<html>Your keyfile has been encrypted<br>" +
-                        "succesfully and saved under filename<br>" +
-                        "key1.baopass<br>");
-                //TODO:wipePasswordFields();
-                gui.nextViewId = MainView.id;
-            } else {
-                // TODO: print error
-            }
-            wipe(pw1);
-            wipe(pw2);
-            MASTER_PASS_1.setText("");
-            MASTER_PASS_2.setText("");
+            encryptNewKey();
         }
     }
 

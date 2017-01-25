@@ -24,11 +24,6 @@ public class EntropyCollector {
 
     /** Returns a hash of buffer contents, clears buffer. */
     public byte[] consume(int outputLengthInBytes) throws UnsupportedEncodingException {
-        /* If buffer is low on entropy, allow generation anyway?
-        if (buffer.length() < 1000) {
-            throw new RuntimeException("Low on entropy!");
-        } */
-
         /* Turn buffer into char array without creating Strings. */
         char[] charBuffer = new char[buffer.length()];
         for (int i=0; i<buffer.length(); i++) {
