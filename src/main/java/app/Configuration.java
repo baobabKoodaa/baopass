@@ -101,11 +101,11 @@ public class Configuration {
         File configDir = new File(getDirPath());
         /* First try with just date in the filename. */
         String fileName = "key-" + getCurrentDate() + ".key";
-        while (true) {
+        for (int i=2 ;; i++) {
             File file = new File(configDir + File.separator + fileName);
             if (!file.exists()) return fileName;
-            /* Append current time to filename as well. */
-            fileName = "key-" + getCurrentDateTime();
+            /* Increment counter in name. */
+            fileName = "key-" + getCurrentDate() + "__" + i + ".key";
         }
     }
 

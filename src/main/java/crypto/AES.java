@@ -1,6 +1,9 @@
 package crypto;
 
-import javax.crypto.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidAlgorithmParameterException;
@@ -15,10 +18,11 @@ public class AES {
 
     /** Iterations for generateKey when generating encryption key from master password.
      *  Needs to be high, because user chosen passwords may be of low quality. */
-    static final int ITERATIONS = 10000;
+    static final int ITERATIONS = 2000;
 
-    /** GCM mode requires key size to be either 128, 196 or 256 bits. */
-    static final int KEY_LENGTH_BYTES = 32;
+    /** GCM mode requires key size to be either 128, 196 or 256 bits.
+     *  TODO: Fix cryptographic export restrictions and use 256bit key. */
+    static final int KEY_LENGTH_BYTES = 16;
 
     /** In our use case, GCM Security tag size is related to the probability
      *  with which we detect incorrect passwords. 128 is the max size. */
@@ -56,6 +60,7 @@ public class AES {
 
         /* Decrypt. */
         SecretKeySpec AESkey = PBKDF2.generateAESkey(password, salt, iterations, keyLength);
+        long b = System.nanoTime();
         Cipher aes = Cipher.getInstance(cipherInstance);
         GCMParameterSpec iv = new GCMParameterSpec(GCM_TAG_SIZE, ivBytes);
         aes.init(Cipher.DECRYPT_MODE, AESkey, iv);

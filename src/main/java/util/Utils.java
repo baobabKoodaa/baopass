@@ -159,7 +159,9 @@ public class Utils {
      *  will be thrown during cryptographic operations. The exception will be
      *  caught and the user should be directed to install a Cryptographic
      *  Policy Extension pack from Oracle. Source for this hack:
-     *  http://stackoverflow.com/a/21148472/4490400 */
+     *  http://stackoverflow.com/a/21148472/4490400
+     *  Doesn't work since JRE 8 u112.
+     *  */
     public static void hackCryptographyExportRestrictions() {
         try {
             Field gate = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");

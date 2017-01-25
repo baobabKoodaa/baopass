@@ -19,7 +19,7 @@ import static util.Utils.*;
 public class BaoPassCore {
 
     /* Few iterations for site pass is ok, because master key has high entropy. */
-    private static final int SITE_PASS_ITERATIONS = 276;
+    private static final int SITE_PASS_ITERATIONS = 3;
 
     /* This variable determines generated site password length.
     *  Must be multiple of 3 for Base64 encoding. 9 bytes yields exactly 12 chars in Base64.
@@ -38,7 +38,6 @@ public class BaoPassCore {
 
     public BaoPassCore(EntropyCollector entropyCollector) throws Exception {
         this.entropyCollector = entropyCollector;
-        Utils.hackCryptographyExportRestrictions();
         config = new Configuration().loadOrCreateConfig();
         loadEncryptedMasterKey(config.getActiveKeyFile());
     }
