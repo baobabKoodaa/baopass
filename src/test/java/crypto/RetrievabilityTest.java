@@ -1,6 +1,6 @@
 package crypto;
 
-import app.BaoPassCore;
+import app.CoreService;
 import org.junit.jupiter.api.Test;
 import util.Utils;
 
@@ -20,7 +20,7 @@ public class RetrievabilityTest {
     @Test
     public void masterKeyAlwaysRetrievableTest() throws Exception {
         Utils.hackCryptographyExportRestrictions();
-        BaoPassCore baoPassCore = new BaoPassCore(new EntropyCollector());
+        CoreService coreService = new CoreService(new EntropyCollector());
         SecureRandom rng = new SecureRandom();
         byte[] masterKeyBytes = new byte[384/8];
         rng.nextBytes(masterKeyBytes);
@@ -31,10 +31,10 @@ public class RetrievabilityTest {
             rng.nextBytes(masterPassBytes);
             char[] masterPassChars = new String(masterPassBytes).toCharArray();
             EncryptedMessage enc = AES.encrypt(masterKeyBytes, masterPassChars);
-            baoPassCore.setMasterKeyEncrypted(enc);
-            baoPassCore.decryptMasterKey(masterPassChars);
+            coreService.setMasterKeyEncrypted(enc);
+            coreService.decryptMasterKey(masterPassChars);
             int end = originalMasterKeyChars.length;
-            char[] returnedChars = baoPassCore.getMasterKeyPlainText();
+            char[] returnedChars = coreService.getMasterKeyPlainText();
 
             /* Test that decrypting an encrypted master key returns the original. */
             assertEquals(originalMasterKeyChars.length, returnedChars.length);

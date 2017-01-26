@@ -2,7 +2,7 @@ package ui;
 
 import app.Main;
 import crypto.EntropyCollector;
-import app.BaoPassCore;
+import app.CoreService;
 import ui.Listeners.ClickListener;
 import ui.Listeners.EntropyListener;
 import ui.Views.*;
@@ -18,12 +18,9 @@ import java.util.HashMap;
 
 public class GUI {
 
-    /* Dependencies. */
-    BaoPassCore baoPassCore;
+    CoreService coreService;
     EntropyCollector entropyCollector;
     EntropyListener inputEntropyListener;
-
-    /* Properties. */
     private JFrame frame;
     private JPanel cardLayoutViewHolder;
     private HashMap<String, View> viewMapper;
@@ -35,19 +32,19 @@ public class GUI {
     public Font monospaceFont;
     public MenuContainer menu;
 
-    public GUI(BaoPassCore baoPassCore, EntropyCollector entropyCollector, String initialViewId) throws Exception {
-        this.baoPassCore = baoPassCore;
+    public GUI(CoreService coreService, EntropyCollector entropyCollector, String initialViewId) throws Exception {
+        this.coreService = coreService;
         this.entropyCollector = entropyCollector;
         this.inputEntropyListener = new EntropyListener(entropyCollector);
         initFonts();
         initFrame();
 
         /* Create GUI contents */
-        setUpView(new MainView        (this, baoPassCore));
-        setUpView(new FirstLaunchView (this, baoPassCore));
-        setUpView(new NewKeyView      (this, baoPassCore));
-        setUpView(new ChangeMPWView   (this, baoPassCore));
-        setUpView(new NotificationView(this, baoPassCore));
+        setUpView(new MainView        (this, coreService));
+        setUpView(new FirstLaunchView (this, coreService));
+        setUpView(new NewKeyView      (this, coreService));
+        setUpView(new ChangeMPWView   (this, coreService));
+        setUpView(new NotificationView(this, coreService));
         createMenu();
 
         packFrame(initialViewId);
@@ -114,7 +111,7 @@ public class GUI {
     private void createMenu() {
         View notificationView = viewMapper.get(NotificationView.id);
         MainView mainView = (MainView) viewMapper.get(MainView.id);
-        menu = new MenuContainer(this, baoPassCore, notificationView, mainView);
+        menu = new MenuContainer(this, coreService, notificationView, mainView);
         frame.setJMenuBar(menu);
     }
 
@@ -216,7 +213,7 @@ public class GUI {
         @Override
         public void run() {
             try {
-                baoPassCore.decryptMasterKey(new char[0]);
+                coreService.decryptMasterKey(new char[0]);
             } catch (Exception ex) {
                 /* Expected decryption to fail due to invalid password. */
             }

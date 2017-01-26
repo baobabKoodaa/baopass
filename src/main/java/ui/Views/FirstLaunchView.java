@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPassCore;
+import app.CoreService;
 import ui.Listeners.ClickListener;
 import ui.GUI;
 import util.ErrorMessages;
@@ -17,11 +17,11 @@ public class FirstLaunchView extends View {
     public static final String id = "FIRST_LAUNCH_VIEW";
 
     GUI gui;
-    BaoPassCore baoPassCore;
+    CoreService coreService;
 
-    public FirstLaunchView(GUI gui, BaoPassCore baoPassCore) {
+    public FirstLaunchView(GUI gui, CoreService coreService) {
         this.gui = gui;
-        this.baoPassCore = baoPassCore;
+        this.coreService = coreService;
         setLayout(new GridBagLayout());
         JPanel buttons = new JPanel(new GridLayout(4, 1));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -39,7 +39,7 @@ public class FirstLaunchView extends View {
         JCheckBox checkBoxRemember = new JCheckBox("Remember this key");
         checkBoxRemember.setFont(gui.regularFont);
         checkBoxRemember.setHorizontalAlignment(JLabel.CENTER);
-        if (baoPassCore.getPreferenceRememberKey()) {
+        if (coreService.getPreferenceRememberKey()) {
             checkBoxRemember.doClick();
         }
         checkBoxRemember.addActionListener(new ClickListener(this, "Checkbox"));
@@ -50,7 +50,7 @@ public class FirstLaunchView extends View {
 
     private void generateNewKey() {
         try {
-            baoPassCore.generateMasterKey();
+            coreService.generateMasterKey();
             gui.notifyUser(Notifications.SUCCESSFUL_KEY_GENERATION);
             gui.setNextViewId(NewKeyView.id);
         } catch (NoSuchAlgorithmException|UnsupportedEncodingException ex) {
@@ -64,7 +64,7 @@ public class FirstLaunchView extends View {
             /* User clicked cancel. */
             return;
         }
-        if (baoPassCore.loadEncryptedMasterKey(file)) {
+        if (coreService.loadEncryptedMasterKey(file)) {
             gui.changeView(MainView.id);
             SwingUtilities.invokeLater(gui.hackToImproveGUIResponsiveness);
         } else {
@@ -74,7 +74,7 @@ public class FirstLaunchView extends View {
 
     private File askUserForFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setCurrentDirectory(new File(baoPassCore.getConfigDirPath()));
+        chooser.setCurrentDirectory(new File(coreService.getConfigDirPath()));
         chooser.setDialogTitle("Choose encrypted keyfile");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setAcceptAllFileFilterUsed(false);
@@ -89,7 +89,8 @@ public class FirstLaunchView extends View {
         switch (id) {
             case "Create new master key":generateNewKey();break;
             case "Load old master key":loadOldKey();break;
-            case "Checkbox":baoPassCore.flipPreferenceRememberKey();break;
+            case "Checkbox":
+                coreService.flipPreferenceRememberKey();break;
             default:break;
         }
     }

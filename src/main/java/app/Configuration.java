@@ -18,6 +18,33 @@ import static util.Utils.getCurrentDateTime;
 
 public class Configuration {
 
+    /* This variable determines generated site password length.
+    *  Must be multiple of 3 for Base64 encoding. 9 bytes yields exactly 12 chars in Base64.
+    *  If a non divisible byte amount is needed, this variable should be first rounded up
+    *  to a multiple of 3 and the result should be truncated down AFTER Base64 encoding.
+    *  Otherwise the last characters in the generated pass will have lower entropy. */
+    public static final int SITE_PASS_BYTES = 9;
+
+    /** Few iterations for site pass is ok, because master key has high entropy. */
+    public static final int SITE_PASS_ITERATIONS = 3;
+
+    /** Iterations for generateKey when generating encryption key from master password.
+     *  Needs to be high, because user chosen passwords may be of low quality. */
+    public static final int ENCRYPTION_ITERATIONS = 2000;
+
+    /** Defines cipher instance. Message-padding not needed in GCM mode. */
+    public static final String ENCRYPTION_CIPHER = "AES/GCM/NoPadding";
+
+    /** GCM mode requires key size to be either 128, 196 or 256 bits.
+     *  TODO: Fix cryptographic export restrictions and use 256bit key. */
+    public static final int ENCRYPTION_KEY_LENGTH_BYTES = 16;
+
+    /** In our use case, GCM Security tag size is related to the probability
+     *  with which we detect incorrect passwords. 128 is the max size. */
+    public static final int ENCRYPTION_GCM_TAG_SIZE = 128;
+
+    /* Some configuration properties are saved in a configuration file,
+     * which is redundantly kept in a Map to reduce disk access. */
     private File configFile;
     private Map<String, String> configMap;
 

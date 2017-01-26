@@ -16,18 +16,8 @@ import java.security.NoSuchAlgorithmException;
 
 import static util.Utils.*;
 
-/** Core contains state and convenience methods for key/pass generation, encryption, config, etc. */
-public class BaoPassCore {
-
-    /* Few iterations for site pass is ok, because master key has high entropy. */
-    private static final int SITE_PASS_ITERATIONS = 3;
-
-    /* This variable determines generated site password length.
-    *  Must be multiple of 3 for Base64 encoding. 9 bytes yields exactly 12 chars in Base64.
-    *  If a non divisible byte amount is needed, this variable should be first rounded up
-    *  to a multiple of 3 and the result should be truncated down AFTER Base64 encoding.
-    *  Otherwise the last characters in the generated pass will have lower entropy. */
-    private static final int SITE_PASS_BYTES = 9;
+/** Contains state and convenience methods for key/pass generation, encryption, config, etc. */
+public class CoreService {
 
     /* Dependencies. */
     private EntropyCollector entropyCollector;
@@ -37,13 +27,13 @@ public class BaoPassCore {
     private EncryptedMessage masterKeyEncrypted;
     private char[] masterKeyPlainText;
 
-    public BaoPassCore(EntropyCollector entropyCollector) throws Exception {
+    public CoreService(EntropyCollector entropyCollector) throws Exception {
         this.entropyCollector = entropyCollector;
         config = new Configuration().loadOrCreateConfig();
         loadEncryptedMasterKey(config.getActiveKeyFile());
     }
 
-    /* Generates master key from 2 entropy sources, saves plain text key in memory. */
+    /** Generates master key from 2 entropy sources, saves plain text key in memory. */
     public char[] generateMasterKey() throws NoSuchAlgorithmException, UnsupportedEncodingException {
         byte[] keyPartFromMainEntropySource = requestRandomBytesFromOS(32);
         byte[] keyPartFromAdditionalEntropy = entropyCollector.consume(16);
@@ -52,7 +42,7 @@ public class BaoPassCore {
         return masterKeyPlainText;
     }
 
-    /* Encrypts master key with given password, saves to file, remembers according to preferences. */
+    /** Encrypts master key with given password and forgets its plain text representation. */
     public void encryptMasterKey(char[] passwordForEncryption) throws Exception {
         if (masterKeyPlainText == null || masterKeyPlainText.length == 0) {
             throw new RuntimeException("Master key not found!");
@@ -78,7 +68,7 @@ public class BaoPassCore {
 
     public char[] generateSitePass(char[] keyword) throws Exception {
         char[] combined = combine(masterKeyPlainText, keyword, false);
-        SecretKey siteKey = PBKDF2.generateKey(combined, SITE_PASS_ITERATIONS, SITE_PASS_BYTES);
+        SecretKey siteKey = PBKDF2.generateKey(combined, Configuration.SITE_PASS_ITERATIONS, Configuration.SITE_PASS_BYTES);
         return getUrlSafeCharsFromBytes(siteKey.getEncoded());
     }
 

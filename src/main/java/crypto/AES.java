@@ -11,22 +11,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import static app.Configuration.*;
+
 public class AES {
-
-    /** Defines cipher instance. Message-padding not needed in GCM mode. */
-    static final String cipherInstance = "AES/GCM/NoPadding";
-
-    /** Iterations for generateKey when generating encryption key from master password.
-     *  Needs to be high, because user chosen passwords may be of low quality. */
-    static final int ITERATIONS = 2000;
-
-    /** GCM mode requires key size to be either 128, 196 or 256 bits.
-     *  TODO: Fix cryptographic export restrictions and use 256bit key. */
-    static final int KEY_LENGTH_BYTES = 16;
-
-    /** In our use case, GCM Security tag size is related to the probability
-     *  with which we detect incorrect passwords. 128 is the max size. */
-    static final int GCM_TAG_SIZE = 128;
 
     public static EncryptedMessage encrypt(final byte[] dataToEncrypt, final char[] password)
             throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
@@ -38,16 +25,16 @@ public class AES {
         rng.nextBytes(ivBytes);
 
         /* In order to encrypt we need to turn password into 256 random-looking bits. */
-        SecretKeySpec AESkey = PBKDF2.generateAESkey(password, salt, ITERATIONS, KEY_LENGTH_BYTES);
+        SecretKeySpec AESkey = PBKDF2.generateAESkey(password, salt, ENCRYPTION_ITERATIONS, ENCRYPTION_KEY_LENGTH_BYTES);
 
         /* Encrypt. */
-        Cipher aes = Cipher.getInstance(cipherInstance);
-        GCMParameterSpec iv = new GCMParameterSpec(GCM_TAG_SIZE, ivBytes);
+        Cipher aes = Cipher.getInstance(ENCRYPTION_CIPHER);
+        GCMParameterSpec iv = new GCMParameterSpec(ENCRYPTION_GCM_TAG_SIZE, ivBytes);
         aes.init(Cipher.ENCRYPT_MODE, AESkey, iv);
         byte[] encryptedData = aes.doFinal(dataToEncrypt);
 
         /* In order to decrypt later, we need to save iv, salt, iterations and key length. */
-        return new EncryptedMessage(encryptedData, salt, ivBytes, ITERATIONS, KEY_LENGTH_BYTES);
+        return new EncryptedMessage(encryptedData, salt, ivBytes, ENCRYPTION_ITERATIONS, ENCRYPTION_KEY_LENGTH_BYTES);
     }
 
     public static byte[] decrypt(final EncryptedMessage encryptedMessage, final char[] password) throws Exception {
@@ -61,8 +48,8 @@ public class AES {
         /* Decrypt. */
         SecretKeySpec AESkey = PBKDF2.generateAESkey(password, salt, iterations, keyLength);
         long b = System.nanoTime();
-        Cipher aes = Cipher.getInstance(cipherInstance);
-        GCMParameterSpec iv = new GCMParameterSpec(GCM_TAG_SIZE, ivBytes);
+        Cipher aes = Cipher.getInstance(ENCRYPTION_CIPHER);
+        GCMParameterSpec iv = new GCMParameterSpec(ENCRYPTION_GCM_TAG_SIZE, ivBytes);
         aes.init(Cipher.DECRYPT_MODE, AESkey, iv);
         byte[] decryptedData = aes.doFinal(cipherText);
         return decryptedData;

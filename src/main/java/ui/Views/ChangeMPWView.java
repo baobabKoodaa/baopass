@@ -1,8 +1,7 @@
 package ui.Views;
 
-import app.BaoPassCore;
+import app.CoreService;
 import util.ErrorMessages;
-import util.Notifications;
 import util.Utils;
 import ui.GUI;
 
@@ -19,7 +18,7 @@ public class ChangeMPWView extends View {
 
     /* Dependencies. */
     GUI gui;
-    BaoPassCore baoPassCore;
+    CoreService coreService;
 
     /* Properties. */
     private JPasswordField MASTER_PASS_OLD;
@@ -28,9 +27,9 @@ public class ChangeMPWView extends View {
     private JButton buttonCancelMPWChange;
     private JButton buttonEncryptOldKey;
 
-    public ChangeMPWView(GUI gui, BaoPassCore baoPassCore) {
+    public ChangeMPWView(GUI gui, CoreService coreService) {
         this.gui = gui;
-        this.baoPassCore = baoPassCore;
+        this.coreService = coreService;
 
         setLayout(new GridBagLayout());
         JPanel contents = new JPanel(new GridBagLayout());
@@ -84,7 +83,7 @@ public class ChangeMPWView extends View {
     void performMasterPasswordChange() {
         char[] oldMPW = MASTER_PASS_OLD.getPassword();
         try {
-            baoPassCore.decryptMasterKey(oldMPW);
+            coreService.decryptMasterKey(oldMPW);
         } catch (InvalidKeyException ex) {
             gui.popupError(ErrorMessages.CRYPTO_EXPORT_RESTRICTIONS);
             return;
@@ -104,7 +103,7 @@ public class ChangeMPWView extends View {
         }
 
         try {
-            String result = baoPassCore.changeMPW(newMPW1);
+            String result = coreService.changeMPW(newMPW1);
             gui.notifyUser(result);
         } catch (Exception ex) {
             gui.popupError(ErrorMessages.INTERNAL_FAILURE + ex.toString());

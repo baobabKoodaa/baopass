@@ -1,6 +1,6 @@
 package ui;
 
-import app.BaoPassCore;
+import app.CoreService;
 import ui.Listeners.ClickListener;
 import ui.Views.ChangeMPWView;
 import ui.Views.FirstLaunchView;
@@ -31,11 +31,11 @@ public class MenuContainer extends JMenuBar {
 
     /* Dependencies. */
     GUI gui;
-    BaoPassCore baoPass;
+    CoreService baoPass;
     View notificationView;
     MainView mainView;
 
-    public MenuContainer(GUI gui, BaoPassCore baoPass, View notificationView, MainView mainView) {
+    public MenuContainer(GUI gui, CoreService baoPass, View notificationView, MainView mainView) {
         super();
         this.gui = gui;
         this.baoPass = baoPass;

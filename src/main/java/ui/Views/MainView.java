@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPassCore;
+import app.CoreService;
 import app.Main;
 import crypto.PBKDF2;
 import ui.Listeners.ClickListener;
@@ -48,7 +48,7 @@ public class MainView extends View {
 
     /* Dependencies. */
     GUI gui;
-    BaoPassCore baoPassCore;
+    CoreService coreService;
 
     /* Properties. */
     JPasswordField MPW;
@@ -60,9 +60,9 @@ public class MainView extends View {
     private ImageIcon openLockIcon;
     private String hashOfWhatWeSetClipboardTo;
 
-    public MainView(GUI gui, BaoPassCore baoPassCore) throws IOException {
+    public MainView(GUI gui, CoreService coreService) throws IOException {
         this.gui = gui;
-        this.baoPassCore = baoPassCore;
+        this.coreService = coreService;
 
         setLayout(new GridBagLayout());
         JPanel contents = new JPanel(new GridBagLayout());
@@ -144,7 +144,7 @@ public class MainView extends View {
 
     private void copySitePassToClipboard() {
         try {
-            char[] sitePassChars = baoPassCore.generateSitePass(keywordField.getText().toCharArray());
+            char[] sitePassChars = coreService.generateSitePass(keywordField.getText().toCharArray());
             setClipboard(new String(sitePassChars));
             scheduler.schedule(clearSitePassFromClipboard, SECONDS_TO_KEEP_SITE_PASS_IN_CLIPBOARD, TimeUnit.SECONDS);
         } catch (Exception ex) {
@@ -192,7 +192,7 @@ public class MainView extends View {
         if (kw.isEmpty()) {
             sitePass.setText(TEXT_WHEN_NO_SITE_PASS);
         } else {
-            char[] pass = baoPassCore.generateSitePass(kw.toCharArray());
+            char[] pass = coreService.generateSitePass(kw.toCharArray());
             if (gui.menu.hideSitePass.getState()) {
                 Arrays.fill(pass, '*');
             }
@@ -209,7 +209,7 @@ public class MainView extends View {
     }
 
     public void closeLock(boolean clearMPW, boolean clearKW) {
-        baoPassCore.forgetMasterKeyPlainText();
+        coreService.forgetMasterKeyPlainText();
         if (clearMPW) MPW.setText("");
         if (clearKW) keywordField.setText("");
         if (!locked) {
@@ -224,7 +224,7 @@ public class MainView extends View {
     private void MPWfieldChanged() {
         char[] mpw = MPW.getPassword();
         try {
-            baoPassCore.decryptMasterKey(mpw);
+            coreService.decryptMasterKey(mpw);
         } catch (InvalidKeyException ex) {
             gui.popupError(ErrorMessages.CRYPTO_EXPORT_RESTRICTIONS);
             return;

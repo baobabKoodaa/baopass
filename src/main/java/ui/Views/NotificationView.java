@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPassCore;
+import app.CoreService;
 import ui.GUI;
 import util.Notifications;
 
@@ -13,15 +13,15 @@ public class NotificationView extends View {
 
     /* Dependencies. */
     GUI gui;
-    BaoPassCore baoPassCore;
+    CoreService coreService;
 
     /* Properties. */
     private JLabel notificationText;
     private JButton buttonOkNotification;
 
-    public NotificationView(GUI gui, BaoPassCore baoPassCore) {
+    public NotificationView(GUI gui, CoreService coreService) {
         this.gui = gui;
-        this.baoPassCore = baoPassCore;
+        this.coreService = coreService;
 
         setLayout(new GridBagLayout());
         JPanel inc2 = new JPanel(new BorderLayout());

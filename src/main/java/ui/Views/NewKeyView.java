@@ -1,6 +1,6 @@
 package ui.Views;
 
-import app.BaoPassCore;
+import app.CoreService;
 import ui.GUI;
 import util.ErrorMessages;
 import util.Notifications;
@@ -20,16 +20,16 @@ public class NewKeyView extends View {
 
     /* Dependencies. */
     private GUI gui;
-    private BaoPassCore baoPassCore;
+    private CoreService coreService;
 
     /* Properties. */
     JPasswordField MASTER_PASS_1;
     JPasswordField MASTER_PASS_2;
     JButton buttonEncryptNewKey;
 
-    public NewKeyView(GUI gui, BaoPassCore baoPassCore) {
+    public NewKeyView(GUI gui, CoreService coreService) {
         this.gui = gui;
-        this.baoPassCore = baoPassCore;
+        this.coreService = coreService;
         setLayout(new GridBagLayout());
         JPanel contents = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -73,8 +73,8 @@ public class NewKeyView extends View {
             return;
         }
         try {
-            baoPassCore.encryptMasterKey(pw1);
-            String fileName = baoPassCore.saveEncryptedMasterKey();
+            coreService.encryptMasterKey(pw1);
+            String fileName = coreService.saveEncryptedMasterKey();
             gui.notifyUser(Notifications.SUCCESSFUL_NEW_KEY_ENCRYPTION + fileName);
             gui.nextViewId = MainView.id;
         } catch (InvalidKeyException ex) {
