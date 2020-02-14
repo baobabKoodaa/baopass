@@ -19,7 +19,6 @@ public class RetrievabilityTest {
     /** Test reversibility of operations on master key (decryption, file ops) */
     @Test
     public void masterKeyAlwaysRetrievableTest() throws Exception {
-        Utils.hackCryptographyExportRestrictions();
         CoreService coreService = new CoreService(new EntropyCollector());
         SecureRandom rng = new SecureRandom();
         byte[] masterKeyBytes = new byte[384/8];

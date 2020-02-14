@@ -35,9 +35,8 @@ public class Configuration {
     /** Defines cipher instance. Message-padding not needed in GCM mode. */
     public static final String ENCRYPTION_CIPHER = "AES/GCM/NoPadding";
 
-    /** GCM mode requires key size to be either 128, 196 or 256 bits.
-     *  TODO: Fix cryptographic export restrictions and use 256bit key. */
-    public static final int ENCRYPTION_KEY_LENGTH_BYTES = 16;
+    /** GCM mode requires key size to be either 128, 196 or 256 bits. */
+    public static final int ENCRYPTION_KEY_LENGTH_BYTES = 32;
 
     /** In our use case, GCM Security tag size is related to the probability
      *  with which we detect incorrect passwords. 128 is the max size. */
