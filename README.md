@@ -21,4 +21,8 @@ No. It needs further testing. But please take a look and let me know if you find
 
 **Can you ramble on about something vaguely related?**
 
-It turns out that I can. So, I'm basically fixing #4 of [4 fatal flaws in deterministic password managers.](https://tonyarcieri.com/4-fatal-flaws-in-deterministic-password-managers) Good read. Oh, and also, I'm going to implement notes in the future. Then it will be a full fledged password manager with emphasis on security. And it's going to keep state, but not sync it across devices. Yuck. 
+It turns out that I can. So, I'm basically fixing #4 of [4 fatal flaws in deterministic password managers.](https://tonyarcieri.com/4-fatal-flaws-in-deterministic-password-managers) Good read. Oh, and also, I'm going to implement notes in the future. Then it will be a full fledged password manager with emphasis on security. And it's going to keep state, but not sync it across devices. Yuck.
+
+**Known issues and workarounds**
+
+- The GUI might look tiny on a HiDPI monitor without scaling. You can scale the application on Ubuntu with `GDK_SCALE`, for example by launching the application from the terminal with `GDK_SCALE=2 java -jar baopass.jar`. You need Java version 9 or higher for scaling to work.
