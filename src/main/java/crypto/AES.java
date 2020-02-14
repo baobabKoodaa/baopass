@@ -24,7 +24,7 @@ public class AES {
         rng.nextBytes(salt);
         rng.nextBytes(ivBytes);
 
-        /* In order to encrypt we need to turn password into 256 random-looking bits. */
+        /* Before we can encrypt we need to generate an AES key from the master password. */
         SecretKeySpec AESkey = PBKDF2.generateAESkey(password, salt, ENCRYPTION_ITERATIONS, ENCRYPTION_KEY_LENGTH_BYTES);
 
         /* Encrypt. */
